@@ -822,7 +822,10 @@
 
         const EXTRA_WORK_OPTIONS = [
             { name: 'Минеральная вата 100 мм, 100 кг/м³', label: 'Вата', unit: 'шт' },
-            { name: 'Бирки кабельные треугольник, 55×60 мм', label: 'Бирки', unit: 'шт' }
+            { name: 'Бирки кабельные треугольник, 55×60 мм', label: 'Бирки', unit: 'шт' },
+            { name: 'Огнезащитный герметик "ОГНЕЗА-ГТ"', label: 'Огнезащитный герметик', unit: 'шт' },
+            { name: 'Замена креплений кабель-канала', label: 'Замена креплений к-к', unit: 'м' },
+            { name: 'Бурение проходов', label: 'Бурение проходов', unit: 'шт' }
         ];
 
         // ====== ХРАНИЛИЩЕ ======
@@ -1125,7 +1128,7 @@
                 }
             });
 
-            // 5. Дополнительные работы (вата, бирки)
+            // 5. Дополнительные работы (вата, бирки, герметик, замена креплений, бурение)
             let allExtraRooms = [];
             let hasDuplicateError = false;
 
@@ -1150,7 +1153,7 @@
 
                     materialsToAdd.push({
                         material: work.name,
-                        unit: 'шт',
+                        unit: work.unit || 'шт',
                         qty: qty,
                         room: roomsStr,
                         workType: workType,
@@ -1528,7 +1531,7 @@
                 const roomsRaw = work.rooms || '';
                 const roomsStr = normalizeRoomsList(roomsRaw);
                 if (work.name && !isNaN(qty) && qty > 0 && roomsStr !== '') {
-                    previewMaterials.push({ material: work.name, unit: 'шт', qty: qty, room: roomsStr });
+                    previewMaterials.push({ material: work.name, unit: work.unit || 'шт', qty: qty, room: roomsStr });
                 }
             }
 
@@ -1877,7 +1880,7 @@
                 const qtyGroup = document.createElement('div');
                 qtyGroup.className = 'form-group col-qty';
                 const qtyLabel = document.createElement('label');
-                qtyLabel.textContent = 'Кол-во (шт)';
+                qtyLabel.textContent = `Кол-во (${work.unit || 'шт'})`;
                 qtyGroup.appendChild(qtyLabel);
                 const qtyInput = document.createElement('input');
                 qtyInput.type = 'text';
@@ -1964,6 +1967,10 @@
                 const option = document.createElement('option');
                 option.value = opt.name;
                 option.textContent = opt.label;
+                // Добавляем единицу измерения к label, чтобы монтажник видел
+                if (opt.unit) {
+                    option.textContent = `${opt.label} (${opt.unit})`;
+                }
                 select.appendChild(option);
             });
             select.addEventListener('change', function() {
@@ -1973,10 +1980,11 @@
                         this.value = '';
                         return;
                     }
-                    const selectedOption = EXTRA_WORK_OPTIONS.find(opt => opt.name === this.value);
+                    const selectedOption = EXTRA_WORK_OPTIONS.find(o => o.name === this.value);
                     extraWorks.push({
                         name: this.value,
                         label: selectedOption ? selectedOption.label : this.value,
+                        unit: selectedOption ? selectedOption.unit : 'шт',
                         qty: '',
                         rooms: ''
                     });
