@@ -680,7 +680,7 @@
             </div>
             <div class="form-group">
                 <label>ФИО монтажника</label>
-                <input id="fio" type="text" placeholder="Иванов И.И.">
+                <input id="fio" type="text" placeholder="Фамилия Имя">
             </div>
         </div>
         <div class="form-row">
@@ -1032,25 +1032,42 @@
             if (e.target === this) hideConfirmModal();
         });
 
-        // ====== ОСНОВНАЯ ФУНКЦИЯ ДОБАВЛЕНИЯ ======
+        // ====== ОСНОВНАЯ ФУНКЦИЯ ДОБАВЛЕНИЯ (С ПРОВЕРКОЙ ФИО И ПОМЕЩЕНИЯ) ======
         function performAddToJournal() {
             const date = dateInput.value;
-            const fio = fioInput.value.trim() || 'Не указано';
+            const fio = fioInput.value.trim();
             const floor = floorSelect.value;
             const room = roomInput.value.trim();
             const workType = workTypeSelect.value;
             const system = systemSelect.value;
 
-            if (!date) { alert('❌ Выберите дату'); return; }
-            if (!room) { alert('❌ Введите номер помещения (только число)'); roomInput.focus(); return; }
+            // === ПРОВЕРКА ОБЯЗАТЕЛЬНЫХ ПОЛЕЙ ===
+            if (!date) {
+                alert('❌ Выберите дату');
+                dateInput.focus();
+                return;
+            }
 
-            const roomNum = parseInt(room);
-            if (isNaN(roomNum) || roomNum <= 0) {
-                alert('❌ Введите корректный номер помещения (только число)');
+            if (!fio || fio.length < 2) {
+                alert('❌ Введите ФИО монтажника (минимум 2 символа)');
+                fioInput.focus();
+                return;
+            }
+
+            if (!room) {
+                alert('❌ Введите номер помещения');
                 roomInput.focus();
                 return;
             }
 
+            const roomNum = parseInt(room);
+            if (isNaN(roomNum) || roomNum <= 0) {
+                alert('❌ Введите корректный номер помещения (только число больше 0)');
+                roomInput.focus();
+                return;
+            }
+
+            // ===== СБОР МАТЕРИАЛОВ =====
             const materialsToAdd = [];
 
             // 1. Кабель
@@ -1157,7 +1174,7 @@
                         qty: qty,
                         room: roomsStr,
                         workType: workType,
-                        system: 'АПС, СОУЭ'  // ← ИСПРАВЛЕНО!
+                        system: 'АПС, СОУЭ'
                     });
                 } else if (work.name && qty > 0 && roomsRaw.trim() !== '' && roomsStr === '') {
                     alert(
@@ -1477,18 +1494,34 @@
         // ====== ОБРАБОТЧИК КНОПКИ "ДОБАВИТЬ В ЖУРНАЛ" ======
         function handleAddToJournal() {
             const date = dateInput.value;
-            const fio = fioInput.value.trim() || 'Не указано';
+            const fio = fioInput.value.trim();
             const floor = floorSelect.value;
             const room = roomInput.value.trim();
             const workType = workTypeSelect.value;
             const system = systemSelect.value;
 
-            if (!date) { alert('❌ Выберите дату'); return; }
-            if (!room) { alert('❌ Введите номер помещения'); roomInput.focus(); return; }
+            // === ПРОВЕРКА ОБЯЗАТЕЛЬНЫХ ПОЛЕЙ ===
+            if (!date) {
+                alert('❌ Выберите дату');
+                dateInput.focus();
+                return;
+            }
+
+            if (!fio || fio.length < 2) {
+                alert('❌ Введите ФИО монтажника (минимум 2 символа)');
+                fioInput.focus();
+                return;
+            }
+
+            if (!room) {
+                alert('❌ Введите номер помещения');
+                roomInput.focus();
+                return;
+            }
 
             const roomNum = parseInt(room);
             if (isNaN(roomNum) || roomNum <= 0) {
-                alert('❌ Введите корректный номер помещения');
+                alert('❌ Введите корректный номер помещения (только число больше 0)');
                 roomInput.focus();
                 return;
             }
