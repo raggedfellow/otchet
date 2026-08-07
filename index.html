@@ -768,7 +768,7 @@
         // ====== НАСТРОЙКА ======
         const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbw9unHgYnRaaAhaaKU_f8kJoGTwv9Tt0ku30gtnNKHGIipWLjU06v3N0LH9KaSUe7SJ/exec';
 
-        // ====== ДАННЫЕ (ОБНОВЛЁННЫЕ) ======
+        // ====== ДАННЫЕ ======
         const PRESET_MATERIALS = {
             'АПС': {
                 cable: { label: 'Кабель АПС', default: 'Кабель КПСнг(А)-FRHF 1×2×0,75', unit: 'м' },
@@ -1157,7 +1157,7 @@
                         qty: qty,
                         room: roomsStr,
                         workType: workType,
-                        system: 'АПС/СОУЭ'
+                        system: 'АПС, СОУЭ'  // ← ИСПРАВЛЕНО!
                     });
                 } else if (work.name && qty > 0 && roomsRaw.trim() !== '' && roomsStr === '') {
                     alert(
@@ -1263,7 +1263,7 @@
             entries.forEach((e, idx) => {
                 const floorDisplay = e.floor === 'подвал' ? 'Подвал' : (e.floor === 'чердак' ? 'Чердак' : e.floor);
                 const badgeClass = e.system === 'АПС' ? 'badge-aps' : (e.system === 'СОУЭ' ? 'badge-soue' :
-                    (e.system === 'АПС/СОУЭ' ? 'badge-both' : 'badge'));
+                    (e.system === 'АПС, СОУЭ' ? 'badge-both' : 'badge'));
                 const workTypeClass = e.workType === 'Монтаж' ? 'montazh' : 'demontazh';
 
                 html += `
@@ -1338,7 +1338,7 @@
             floorSelect.value = last.floor;
             roomInput.value = last.room;
             workTypeSelect.value = last.workType || 'Монтаж';
-            systemSelect.value = last.system === 'АПС/СОУЭ' ? 'АПС' : last.system;
+            systemSelect.value = last.system === 'АПС, СОУЭ' ? 'АПС' : last.system;
             extraMaterials = [];
             extraWorks = [];
             savedPresetValues = {
@@ -1966,11 +1966,8 @@
             availableWorks.forEach(opt => {
                 const option = document.createElement('option');
                 option.value = opt.name;
-                option.textContent = opt.label;
-                // Добавляем единицу измерения к label, чтобы монтажник видел
-                if (opt.unit) {
-                    option.textContent = `${opt.label} (${opt.unit})`;
-                }
+                const labelWithUnit = opt.unit ? `${opt.label} (${opt.unit})` : opt.label;
+                option.textContent = labelWithUnit;
                 select.appendChild(option);
             });
             select.addEventListener('change', function() {
