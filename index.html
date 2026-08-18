@@ -203,6 +203,15 @@
             font-weight: 600;
             display: inline-block;
         }
+        .badge-object {
+            background: #d4edda;
+            color: #155724;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-block;
+        }
         .status-bar {
             padding: 12px 16px;
             border-radius: 10px;
@@ -685,6 +694,14 @@
         </div>
         <div class="form-row">
             <div class="form-group">
+                <label>Объект</label>
+                <select id="object">
+                    <option value="">— Выберите объект —</option>
+                    <option value="ЖЕДЕПОМ">🏗️ ЖЕДЕПОМ</option>
+                    <option value="Ларинская гимназия">🏫 Ларинская гимназия</option>
+                </select>
+            </div>
+            <div class="form-group">
                 <label>Этаж</label>
                 <select id="floor">
                     <option value="подвал">Подвал</option>
@@ -698,6 +715,8 @@
                 <label>№ помещения</label>
                 <input id="room" type="number" placeholder="5" min="1" step="1">
             </div>
+        </div>
+        <div class="form-row">
             <div class="form-group">
                 <label>Тип работ</label>
                 <select id="workType">
@@ -738,6 +757,7 @@
                     <tr>
                         <th>#</th>
                         <th>Дата</th>
+                        <th>Объект</th>
                         <th>ФИО</th>
                         <th>Этаж</th>
                         <th>Пом.</th>
@@ -750,7 +770,7 @@
                     </tr>
                 </thead>
                 <tbody id="entriesBody">
-                    <tr><td colspan="11" style="text-align:center; color:#aaa;">Нет записей</td></tr>
+                    <tr><td colspan="12" style="text-align:center; color:#aaa;">Нет записей</td></tr>
                 </tbody>
             </table>
         </div>
@@ -766,7 +786,7 @@
 
     <script>
         // ====== НАСТРОЙКА ======
-        const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbw9unHgYnRaaAhaaKU_f8kJoGTwv9Tt0ku30gtnNKHGIipWLjU06v3N0LH9KaSUe7SJ/exec';
+        const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbySMuan63XhMHXHV0JUvBDzDyc5zu1ymqv0lGQwQrKfZpE0ZOZMh-RXBZnQ4V8NNWgu/exec';
 
         // ====== ДАННЫЕ ======
         const PRESET_MATERIALS = {
@@ -861,6 +881,7 @@
         // ====== DOM ======
         const dateInput = document.getElementById('workDate');
         const fioInput = document.getElementById('fio');
+        const objectSelect = document.getElementById('object');
         const floorSelect = document.getElementById('floor');
         const roomInput = document.getElementById('room');
         const workTypeSelect = document.getElementById('workType');
@@ -991,6 +1012,7 @@
             confirmDetails.innerHTML = `
                         <strong>📅 Дата:</strong> ${data.date}<br>
                         <strong>👤 ФИО:</strong> ${data.fio}<br>
+                        <strong>🏗️ Объект:</strong> ${data.object}<br>
                         <strong>🏗️ Этаж:</strong> ${floorDisplay}<br>
                         <strong>🏠 Помещение:</strong> ${data.room}<br>
                         <strong>🔧 Тип работ:</strong> ${data.workType}<br>
@@ -1032,10 +1054,11 @@
             if (e.target === this) hideConfirmModal();
         });
 
-        // ====== ОСНОВНАЯ ФУНКЦИЯ ДОБАВЛЕНИЯ (С ПРОВЕРКОЙ ФИО И ПОМЕЩЕНИЯ) ======
+        // ====== ОСНОВНАЯ ФУНКЦИЯ ДОБАВЛЕНИЯ ======
         function performAddToJournal() {
             const date = dateInput.value;
             const fio = fioInput.value.trim();
+            const object = objectSelect.value;
             const floor = floorSelect.value;
             const room = roomInput.value.trim();
             const workType = workTypeSelect.value;
@@ -1045,6 +1068,12 @@
             if (!date) {
                 alert('❌ Выберите дату');
                 dateInput.focus();
+                return;
+            }
+
+            if (!object) {
+                alert('❌ Выберите объект (ЖЕДЕПОМ или Ларинская гимназия)');
+                objectSelect.focus();
                 return;
             }
 
@@ -1085,7 +1114,8 @@
                     qty: cableQty,
                     room: room,
                     workType: workType,
-                    system: system
+                    system: system,
+                    object: object
                 });
             }
 
@@ -1099,7 +1129,8 @@
                     qty: channelQty,
                     room: room,
                     workType: workType,
-                    system: system
+                    system: system,
+                    object: object
                 });
             }
 
@@ -1113,7 +1144,8 @@
                     qty: corrugationQty,
                     room: room,
                     workType: workType,
-                    system: system
+                    system: system,
+                    object: object
                 });
             }
 
@@ -1139,7 +1171,8 @@
                             qty: qty,
                             room: room,
                             workType: workType,
-                            system: system
+                            system: system,
+                            object: object
                         });
                     }
                 }
@@ -1174,7 +1207,8 @@
                         qty: qty,
                         room: roomsStr,
                         workType: workType,
-                        system: 'АПС, СОУЭ'
+                        system: 'АПС, СОУЭ',
+                        object: object
                     });
                 } else if (work.name && qty > 0 && roomsRaw.trim() !== '' && roomsStr === '') {
                     alert(
@@ -1203,6 +1237,7 @@
                 const existingIndex = entries.findIndex(e =>
                     e.date === date &&
                     e.fio === fio &&
+                    e.object === object &&
                     e.floor === floor &&
                     e.room === item.room &&
                     e.workType === item.workType &&
@@ -1217,6 +1252,7 @@
                     entries.push({
                         date: date,
                         fio: fio,
+                        object: object,
                         floor: floor,
                         room: item.room,
                         workType: item.workType,
@@ -1270,7 +1306,7 @@
         function render() {
             if (entries.length === 0) {
                 entriesBody.innerHTML =
-                    `<tr><td colspan="11" style="text-align:center; color:#aaa;">Нет записей</td></tr>`;
+                    `<tr><td colspan="12" style="text-align:center; color:#aaa;">Нет записей</td></tr>`;
                 rowCount.textContent = '0';
                 quickAddHint.style.display = 'none';
                 return;
@@ -1287,6 +1323,7 @@
                             <tr>
                                 <td>${idx + 1}</td>
                                 <td>${e.date}</td>
+                                <td><span class="badge-object">${e.object}</span></td>
                                 <td>${e.fio}</td>
                                 <td><span class="badge-room">${floorDisplay}</span></td>
                                 <td>${e.room}</td>
@@ -1342,7 +1379,7 @@
                 const last = entries[entries.length - 1];
                 const floorDisplay = last.floor === 'подвал' ? 'Подвал' : (last.floor === 'чердак' ? 'Чердак' : last
                     .floor);
-                lastLocationDisplay.textContent = `${floorDisplay}, помещение ${last.room}`;
+                lastLocationDisplay.textContent = `${last.object}, ${floorDisplay}, помещение ${last.room}`;
                 quickAddHint.style.display = 'flex';
             } else {
                 quickAddHint.style.display = 'none';
@@ -1352,6 +1389,7 @@
         useLastLocationBtn.addEventListener('click', function() {
             if (entries.length === 0) return;
             const last = entries[entries.length - 1];
+            objectSelect.value = last.object;
             floorSelect.value = last.floor;
             roomInput.value = last.room;
             workTypeSelect.value = last.workType || 'Монтаж';
@@ -1378,12 +1416,12 @@
             }
 
             let csv = '\uFEFF';
-            csv += 'Дата;ФИО;Этаж;Помещение;Тип работ;Система;Материал;Ед.изм.;Количество\n';
+            csv += 'Дата;Объект;ФИО;Этаж;Помещение;Тип работ;Система;Материал;Ед.изм.;Количество\n';
 
             entries.forEach(e => {
                 const floorDisplay = e.floor === 'подвал' ? 'Подвал' : (e.floor === 'чердак' ? 'Чердак' : e.floor);
                 csv +=
-                    `${e.date};${e.fio};${floorDisplay};${e.room};${e.workType || 'Монтаж'};${e.system};${e.material};${e.unit || ''};${formatNumber(e.qty)}\n`;
+                    `${e.date};${e.object};${e.fio};${floorDisplay};${e.room};${e.workType || 'Монтаж'};${e.system};${e.material};${e.unit || ''};${formatNumber(e.qty)}\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -1413,7 +1451,29 @@
                 return;
             }
 
-            if (!confirm(`📤 Отправить ${entries.length} записей в Google Таблицу?`)) {
+            // === ПРОВЕРКА ОБЪЕКТА ПЕРЕД ОТПРАВКОЙ ===
+            const firstEntry = entries[0];
+            const objectName = firstEntry.object;
+            if (!objectName) {
+                statusBar.className = 'status-bar error';
+                statusBar.textContent = '❌ Не выбран объект!';
+                statusBar.style.display = 'block';
+                return;
+            }
+
+            // Проверяем, что все записи относятся к одному объекту
+            const allSameObject = entries.every(e => e.object === objectName);
+            if (!allSameObject) {
+                statusBar.className = 'status-bar error';
+                statusBar.textContent = '❌ В журнале есть записи с разными объектами! Очистите журнал и заполните заново.';
+                statusBar.style.display = 'block';
+                return;
+            }
+
+            // === ПОДТВЕРЖДЕНИЕ ОБЪЕКТА ===
+            const confirmMessage =
+                `📤 Вы выбрали объект: "${objectName}".\n\nКоличество записей: ${entries.length}\n\nВсё верно?`;
+            if (!confirm(confirmMessage)) {
                 return;
             }
 
@@ -1423,6 +1483,7 @@
 
             const reports = entries.map(e => ({
                 date: e.date,
+                object: e.object,
                 fio: e.fio,
                 floor: e.floor,
                 room: e.room,
@@ -1459,7 +1520,8 @@
 
             if (failCount === 0) {
                 statusBar.className = 'status-bar success';
-                statusBar.textContent = `✅ Отправлено: ${successCount} записей. Проверьте таблицу!`;
+                statusBar.textContent =
+                `✅ Отправлено: ${successCount} записей для объекта "${objectName}". Проверьте таблицу!`;
                 statusBar.style.display = 'block';
 
                 setTimeout(() => {
@@ -1495,6 +1557,7 @@
         function handleAddToJournal() {
             const date = dateInput.value;
             const fio = fioInput.value.trim();
+            const object = objectSelect.value;
             const floor = floorSelect.value;
             const room = roomInput.value.trim();
             const workType = workTypeSelect.value;
@@ -1504,6 +1567,12 @@
             if (!date) {
                 alert('❌ Выберите дату');
                 dateInput.focus();
+                return;
+            }
+
+            if (!object) {
+                alert('❌ Выберите объект (ЖЕДЕПОМ или Ларинская гимназия)');
+                objectSelect.focus();
                 return;
             }
 
@@ -1576,6 +1645,7 @@
             showConfirmModal({
                 date: date,
                 fio: fio,
+                object: object,
                 floor: floor,
                 room: room,
                 workType: workType,
@@ -2080,6 +2150,7 @@
         renderExtraWorkBlock();
         console.log('✅ Форма загружена!');
         console.log('📱 Оптимизировано для iPhone');
+        console.log('🏗️ Доступные объекты: ЖЕДЕПОМ, Ларинская гимназия');
     </script>
 </body>
 </html>
