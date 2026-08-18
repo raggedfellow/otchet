@@ -756,8 +756,8 @@
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>Дата</th>
                         <th>Объект</th>
+                        <th>Дата</th>
                         <th>ФИО</th>
                         <th>Этаж</th>
                         <th>Пом.</th>
@@ -870,11 +870,1265 @@
             { name: 'Расключение', label: 'Расключение', unit: 'шт' }
         ];
 
-        // ====== ОСТАЛЬНОЙ КОД ======
-        // (здесь идёт ВЕСЬ ОСТАЛЬНОЙ КОД из предыдущей версии — от ХРАНИЛИЩА до СТАРТА)
-        // Чтобы не перегружать ответ, я его не дублирую, но в финальном файле он будет полностью.
-        // Если нужно, я вышлю ПОЛНЫЙ файл целиком.
-        // Пока просто подтверди, что логика верна, и я дам ПОЛНЫЙ ГОТОВЫЙ HTML.
+        // ====== ХРАНИЛИЩЕ ======
+        let entries = [];
+        let pendingEntry = null;
+        let extraMaterials = [];
+        let extraWorks = [];
+
+        let savedPresetValues = {
+            cableQty: '',
+            cableChannel: '',
+            cableChannelQty: '',
+            corrugation: '',
+            corrugationQty: ''
+        };
+
+        // ====== ФУНКЦИИ ======
+        function formatNumber(num) {
+            if (Number.isInteger(num)) return num.toString();
+            return num.toFixed(1);
+        }
+
+        function parseQty(value) {
+            let cleaned = value.replace(',', '.');
+            cleaned = cleaned.replace(/[^0-9.]/g, '');
+            const parts = cleaned.split('.');
+            if (parts.length > 2) {
+                cleaned = parts[0] + '.' + parts.slice(1).join('');
+            }
+            return parseFloat(cleaned);
+        }
+
+        // ====== DOM ======
+        const dateInput = document.getElementById('workDate');
+        const fioInput = document.getElementById('fio');
+        const objectSelect = document.getElementById('object');
+        const floorSelect = document.getElementById('floor');
+        const roomInput = document.getElementById('room');
+        const workTypeSelect = document.getElementById('workType');
+        const systemSelect = document.getElementById('system');
+        const presetBlock = document.getElementById('presetBlock');
+        const extraWorkBlock = document.getElementById('extraWorkBlock');
+        const addToJournalBtn = document.getElementById('addToJournalBtn');
+        const entriesBody = document.getElementById('entriesBody');
+        const rowCount = document.getElementById('rowCount');
+        const clearBtn = document.getElementById('clearBtn');
+        const sendBtn = document.getElementById('sendBtn');
+        const csvBtn = document.getElementById('csvBtn');
+        const statusBar = document.getElementById('statusBar');
+        const quickAddHint = document.getElementById('quickAddHint');
+        const lastLocationDisplay = document.getElementById('lastLocationDisplay');
+        const useLastLocationBtn = document.getElementById('useLastLocationBtn');
+        const warningModal = document.getElementById('warningModal');
+        const warningMessage = document.getElementById('warningMessage');
+        const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+        const modalCancelBtn = document.getElementById('modalCancelBtn');
+        const confirmModal = document.getElementById('confirmModal');
+        const confirmDetails = document.getElementById('confirmDetails');
+        const confirmWarning = document.getElementById('confirmWarning');
+        const confirmOkBtn = document.getElementById('confirmOkBtn');
+        const confirmCancelBtn = document.getElementById('confirmCancelBtn');
+
+        // ====== ДАТА ======
+        function setTodayDate() {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            dateInput.value = `${year}-${month}-${day}`;
+        }
+        setTodayDate();
+
+        // ====== НОРМАЛИЗАЦИЯ СПИСКА ПОМЕЩЕНИЙ ======
+        function normalizeRoomsList(input) {
+            if (!input || input.trim() === '') return '';
+            const cleaned = input.replace(/,/g, ' ');
+            const parts = cleaned.trim().split(/\s+/);
+            const numbers = parts.map(p => parseInt(p)).filter(n => !isNaN(n) && n > 0);
+            const unique = [...new Set(numbers)];
+            return unique.join(', ');
+        }
+
+        // ====== ПРОВЕРКИ ======
+        function checkCableCompatibility(system, material) {
+            const isCable = material.includes('Кабель КПСнг') || material.includes('Кабель КПСЭнг');
+            if (!isCable) return null;
+
+            const isAPS = material.includes('0,75') || material.includes('0,5');
+            const isSOUE = material.includes('1,0');
+
+            if (system === 'АПС' && isSOUE) {
+                return {
+                    wrong: true,
+                    message: '⚠️ Вы выбрали систему "АПС", но указали кабель для СОУЭ (1,0).\n\n✅ Обычно для АПС используется кабель 0,5 или 0,75.\n\nПродолжить?'
+                };
+            }
+
+            if (system === 'СОУЭ' && isAPS) {
+                return {
+                    wrong: true,
+                    message: '⚠️ Вы выбрали систему "СОУЭ", но указали кабель для АПС (0,5 или 0,75).\n\n✅ Обычно для СОУЭ используется кабель 1,0.\n\nПродолжить?'
+                };
+            }
+
+            return null;
+        }
+
+        function checkPowerCable(system, material) {
+            if (material === 'Кабель питания 12В' && system === 'АПС') {
+                return {
+                    wrong: true,
+                    message: '⚠️ Кабель питания 12В обычно используется для системы СОУЭ.\n\n❌ Вы пытаетесь добавить его в АПС.\n\nПродолжить?'
+                };
+            }
+            return null;
+        }
+
+        function checkDuplicateRooms(roomsStr) {
+            if (!roomsStr || roomsStr.trim() === '') return { valid: true, duplicates: [] };
+            const parts = roomsStr.split(',').map(s => s.trim()).filter(s => s.length > 0);
+            const seen = new Set();
+            const duplicates = [];
+            for (const p of parts) {
+                if (seen.has(p)) {
+                    duplicates.push(p);
+                }
+                seen.add(p);
+            }
+            return { valid: duplicates.length === 0, duplicates };
+        }
+
+        // ====== МОДАЛЬНОЕ ОКНО ОШИБКИ ======
+        function showWarning(message, entryData) {
+            warningMessage.textContent = message;
+            pendingEntry = entryData;
+            warningModal.classList.add('active');
+        }
+
+        function hideWarning() {
+            warningModal.classList.remove('active');
+            pendingEntry = null;
+        }
+
+        modalConfirmBtn.addEventListener('click', function() {
+            hideWarning();
+            performAddToJournal();
+        });
+
+        modalCancelBtn.addEventListener('click', hideWarning);
+        warningModal.addEventListener('click', function(e) {
+            if (e.target === this) hideWarning();
+        });
+
+        // ====== МОДАЛЬНОЕ ОКНО ПРОВЕРКИ ======
+        function showConfirmModal(data) {
+            let materialsList = '';
+            data.materials.forEach((item, index) => {
+                materialsList +=
+                    `${index + 1}. ${item.material} — ${formatNumber(item.qty)} ${item.unit} (пом. ${item.room})\n`;
+            });
+
+            const floorDisplay = data.floor === 'подвал' ? 'Подвал' : (data.floor === 'чердак' ? 'Чердак' : data.floor);
+
+            confirmDetails.innerHTML = `
+                        <strong>📅 Дата:</strong> ${data.date}<br>
+                        <strong>👤 ФИО:</strong> ${data.fio}<br>
+                        <strong>🏗️ Объект:</strong> ${data.object}<br>
+                        <strong>🏗️ Этаж:</strong> ${floorDisplay}<br>
+                        <strong>🏠 Помещение:</strong> ${data.room}<br>
+                        <strong>🔧 Тип работ:</strong> ${data.workType}<br>
+                        <strong>📡 Система:</strong> ${data.system}<br>
+                        <strong>📦 Материалы (${data.materials.length} шт):</strong><br>
+                        ${materialsList.replace(/\n/g, '<br>')}
+                    `;
+
+            const today = new Date().toISOString().slice(0, 10);
+            if (data.date !== today) {
+                confirmWarning.textContent = '⚠️ Внимание! Дата отличается от сегодняшней. Проверьте правильность.';
+                confirmWarning.style.display = 'block';
+            } else {
+                confirmWarning.style.display = 'none';
+            }
+
+            if (data.fio.length < 2) {
+                confirmWarning.textContent = '⚠️ Внимание! ФИО указано слишком коротко. Проверьте правильность.';
+                confirmWarning.style.display = 'block';
+            }
+
+            confirmModal.classList.add('active');
+        }
+
+        function hideConfirmModal() {
+            confirmModal.classList.remove('active');
+        }
+
+        confirmCancelBtn.addEventListener('click', function() {
+            hideConfirmModal();
+        });
+
+        confirmOkBtn.addEventListener('click', function() {
+            hideConfirmModal();
+            performAddToJournal();
+        });
+
+        confirmModal.addEventListener('click', function(e) {
+            if (e.target === this) hideConfirmModal();
+        });
+
+        // ====== ОСНОВНАЯ ФУНКЦИЯ ДОБАВЛЕНИЯ ======
+        function performAddToJournal() {
+            const date = dateInput.value;
+            const fio = fioInput.value.trim();
+            const object = objectSelect.value;
+            const floor = floorSelect.value;
+            const room = roomInput.value.trim();
+            const workType = workTypeSelect.value;
+            const system = systemSelect.value;
+
+            if (!date) { alert('❌ Выберите дату'); dateInput.focus(); return; }
+            if (!object) { alert('❌ Выберите объект'); objectSelect.focus(); return; }
+            if (!fio || fio.length < 2) { alert('❌ Введите ФИО'); fioInput.focus(); return; }
+            if (!room) { alert('❌ Введите помещение'); roomInput.focus(); return; }
+
+            const roomNum = parseInt(room);
+            if (isNaN(roomNum) || roomNum <= 0) { alert('❌ Некорректный номер помещения'); roomInput.focus(); return; }
+
+            const materialsToAdd = [];
+
+            // Кабель
+            const cableQty = parseQty(document.querySelector('.preset-cable-qty')?.value || '');
+            const cableName = document.querySelector('.preset-cable')?.value || '';
+            if (cableName && !isNaN(cableQty) && cableQty > 0) {
+                const checkResult = checkCableCompatibility(system, cableName);
+                if (checkResult) {
+                    showWarning(checkResult.message, null);
+                    return;
+                }
+                materialsToAdd.push({
+                    material: cableName,
+                    unit: 'м',
+                    qty: cableQty,
+                    room: room,
+                    workType: workType,
+                    system: system,
+                    object: object
+                });
+            }
+
+            // Кабель-канал
+            const channelQty = parseQty(document.querySelector('.preset-channel-qty')?.value || '');
+            const channelName = document.querySelector('.preset-cable-channel')?.value || '';
+            if (channelName && !isNaN(channelQty) && channelQty > 0) {
+                materialsToAdd.push({
+                    material: channelName,
+                    unit: 'м',
+                    qty: channelQty,
+                    room: room,
+                    workType: workType,
+                    system: system,
+                    object: object
+                });
+            }
+
+            // Гофра
+            const corrugationQty = parseQty(document.querySelector('.preset-corrugation-qty')?.value || '');
+            const corrugationName = document.querySelector('.preset-corrugation')?.value || '';
+            if (corrugationName && !isNaN(corrugationQty) && corrugationQty > 0) {
+                materialsToAdd.push({
+                    material: corrugationName,
+                    unit: 'м',
+                    qty: corrugationQty,
+                    room: room,
+                    workType: workType,
+                    system: system,
+                    object: object
+                });
+            }
+
+            // Дополнительные материалы (из зелёной зоны)
+            document.querySelectorAll('.preset-extra-select').forEach((select, index) => {
+                if (index < extraMaterials.length) {
+                    const qtyInput = document.querySelectorAll('.preset-extra-qty')[index];
+                    const qty = parseQty(qtyInput?.value || '');
+                    const materialName = select.value;
+                    if (materialName && !isNaN(qty) && qty > 0) {
+                        const unit = PRESET_MATERIALS[system]?.extra.find(e => e.name === materialName)?.unit ||
+                        'м';
+                        if (materialName === 'Кабель питания 12В') {
+                            const checkResult = checkPowerCable(system, materialName);
+                            if (checkResult) {
+                                showWarning(checkResult.message, null);
+                                return;
+                            }
+                        }
+                        materialsToAdd.push({
+                            material: materialName,
+                            unit: unit,
+                            qty: qty,
+                            room: room,
+                            workType: workType,
+                            system: system,
+                            object: object
+                        });
+                    }
+                }
+            });
+
+            // Дополнительные работы
+            let allExtraRooms = [];
+            let hasDuplicateError = false;
+
+            for (const work of extraWorks) {
+                const qty = parseQty(work.qty || '');
+                const roomsRaw = work.rooms || '';
+                const roomsStr = normalizeRoomsList(roomsRaw);
+
+                if (work.name && !isNaN(qty) && qty > 0 && roomsStr !== '') {
+                    const parts = roomsStr.split(',').map(s => s.trim()).filter(s => s.length > 0);
+                    for (const p of parts) {
+                        if (allExtraRooms.includes(p)) {
+                            alert(
+                                `⚠️ Помещение ${p} уже использовано в другой дополнительной работе. Повторное использование запрещено.`
+                                );
+                            hasDuplicateError = true;
+                            break;
+                        }
+                        allExtraRooms.push(p);
+                    }
+                    if (hasDuplicateError) break;
+
+                    materialsToAdd.push({
+                        material: work.name,
+                        unit: work.unit || 'шт',
+                        qty: qty,
+                        room: roomsStr,
+                        workType: workType,
+                        system: 'АПС, СОУЭ',
+                        object: object
+                    });
+                } else if (work.name && qty > 0 && roomsRaw.trim() !== '' && roomsStr === '') {
+                    alert(
+                        `❌ Для "${work.name}" введены некорректные номера помещений. Используйте цифры, запятые или пробелы.`
+                        );
+                    hasDuplicateError = true;
+                    break;
+                } else if (work.name && qty > 0 && roomsRaw.trim() === '') {
+                    alert(`❌ Для "${work.name}" не указаны помещения`);
+                    hasDuplicateError = true;
+                    break;
+                }
+            }
+
+            if (hasDuplicateError) return;
+
+            if (materialsToAdd.length === 0) {
+                alert('❌ Нет материалов с количеством > 0 для добавления');
+                return;
+            }
+
+            let addedCount = 0;
+            let mergedCount = 0;
+
+            for (const item of materialsToAdd) {
+                const existingIndex = entries.findIndex(e =>
+                    e.date === date &&
+                    e.fio === fio &&
+                    e.object === object &&
+                    e.floor === floor &&
+                    e.room === item.room &&
+                    e.workType === item.workType &&
+                    e.system === item.system &&
+                    e.material === item.material
+                );
+
+                if (existingIndex !== -1) {
+                    entries[existingIndex].qty += item.qty;
+                    mergedCount++;
+                } else {
+                    entries.push({
+                        date: date,
+                        fio: fio,
+                        object: object,
+                        floor: floor,
+                        room: item.room,
+                        workType: item.workType,
+                        system: item.system,
+                        material: item.material,
+                        unit: item.unit,
+                        qty: item.qty
+                    });
+                    addedCount++;
+                }
+            }
+
+            document.querySelectorAll('.preset-qty').forEach(input => { input.value = ''; });
+            extraMaterials = [];
+            extraWorks = [];
+            savedPresetValues = {
+                cableQty: '',
+                cableChannel: '',
+                cableChannelQty: '',
+                corrugation: '',
+                corrugationQty: ''
+            };
+
+            renderPresetBlock();
+            renderExtraWorkBlock();
+            render();
+
+            let message = `✅ Добавлено ${addedCount} новых записей`;
+            if (mergedCount > 0) {
+                message += `, ${mergedCount} материалов суммированы с существующими`;
+            }
+            alert(message);
+        }
+
+        // ====== РЕДАКТИРОВАНИЕ В ЖУРНАЛЕ ======
+        function updateEntryQty(index, newQty) {
+            if (index >= 0 && index < entries.length) {
+                const parsed = parseQty(newQty);
+                if (!isNaN(parsed) && parsed > 0) {
+                    entries[index].qty = parsed;
+                    render();
+                } else if (newQty === '') {
+                    // ничего не делаем
+                } else {
+                    alert('❌ Введите корректное количество > 0');
+                }
+            }
+        }
+
+        // ====== РЕНДЕР ЖУРНАЛА ======
+        function render() {
+            if (entries.length === 0) {
+                entriesBody.innerHTML =
+                    `<tr><td colspan="12" style="text-align:center; color:#aaa;">Нет записей</td></tr>`;
+                rowCount.textContent = '0';
+                quickAddHint.style.display = 'none';
+                return;
+            }
+
+            let html = '';
+            entries.forEach((e, idx) => {
+                const floorDisplay = e.floor === 'подвал' ? 'Подвал' : (e.floor === 'чердак' ? 'Чердак' : e.floor);
+                const badgeClass = e.system === 'АПС' ? 'badge-aps' : (e.system === 'СОУЭ' ? 'badge-soue' :
+                    (e.system === 'АПС, СОУЭ' ? 'badge-both' : 'badge'));
+                const workTypeClass = e.workType === 'Монтаж' ? 'montazh' : 'demontazh';
+
+                html += `
+                            <tr>
+                                <td>${idx + 1}</td>
+                                <td><span class="badge-object">${e.object}</span></td>
+                                <td>${e.date}</td>
+                                <td>${e.fio}</td>
+                                <td><span class="badge-room">${floorDisplay}</span></td>
+                                <td>${e.room}</td>
+                                <td><span class="badge badge-worktype ${workTypeClass}">${e.workType}</span></td>
+                                <td><span class="badge ${badgeClass}">${e.system}</span></td>
+                                <td style="font-size:11px;">${e.material}</td>
+                                <td>${e.unit}</td>
+                                <td>
+                                    <input type="text" class="table-qty-input" value="${formatNumber(e.qty)}" data-index="${idx}">
+                                    <button class="save-qty-btn" data-index="${idx}">💾</button>
+                                </td>
+                                <td><button class="delete-btn" data-index="${idx}">✕</button></td>
+                            </tr>
+                        `;
+            });
+
+            entriesBody.innerHTML = html;
+            rowCount.textContent = entries.length;
+
+            document.querySelectorAll('.save-qty-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.dataset.index);
+                    const input = document.querySelector(`.table-qty-input[data-index="${index}"]`);
+                    if (input) updateEntryQty(index, input.value);
+                });
+            });
+
+            document.querySelectorAll('.table-qty-input').forEach(input => {
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        const index = parseInt(this.dataset.index);
+                        updateEntryQty(index, this.value);
+                    }
+                });
+            });
+
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const idx = parseInt(this.dataset.index);
+                    if (confirm(`Удалить запись #${idx + 1}?`)) {
+                        entries.splice(idx, 1);
+                        render();
+                        updateQuickAddHint();
+                    }
+                });
+            });
+
+            updateQuickAddHint();
+        }
+
+        function updateQuickAddHint() {
+            if (entries.length > 0) {
+                const last = entries[entries.length - 1];
+                const floorDisplay = last.floor === 'подвал' ? 'Подвал' : (last.floor === 'чердак' ? 'Чердак' : last
+                    .floor);
+                lastLocationDisplay.textContent = `${last.object}, ${floorDisplay}, помещение ${last.room}`;
+                quickAddHint.style.display = 'flex';
+            } else {
+                quickAddHint.style.display = 'none';
+            }
+        }
+
+        useLastLocationBtn.addEventListener('click', function() {
+            if (entries.length === 0) return;
+            const last = entries[entries.length - 1];
+            objectSelect.value = last.object;
+            floorSelect.value = last.floor;
+            roomInput.value = last.room;
+            workTypeSelect.value = last.workType || 'Монтаж';
+            systemSelect.value = last.system === 'АПС, СОУЭ' ? 'АПС' : last.system;
+            extraMaterials = [];
+            extraWorks = [];
+            savedPresetValues = {
+                cableQty: '',
+                cableChannel: '',
+                cableChannelQty: '',
+                corrugation: '',
+                corrugationQty: ''
+            };
+            renderPresetBlock();
+            renderExtraWorkBlock();
+            quickAddHint.style.display = 'none';
+        });
+
+        // ====== CSV ======
+        function exportCSV() {
+            if (entries.length === 0) {
+                alert('❌ Нет данных для экспорта');
+                return;
+            }
+
+            let csv = '\uFEFF';
+            csv += 'Объект;Дата;ФИО;Этаж;Помещение;Тип работ;Система;Материал;Ед.изм.;Количество\n';
+
+            entries.forEach(e => {
+                const floorDisplay = e.floor === 'подвал' ? 'Подвал' : (e.floor === 'чердак' ? 'Чердак' : e.floor);
+                csv +=
+                    `${e.object};${e.date};${e.fio};${floorDisplay};${e.room};${e.workType || 'Монтаж'};${e.system};${e.material};${e.unit || ''};${formatNumber(e.qty)}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            const date = dateInput.value || 'отчёт';
+            link.setAttribute('download', `отчёт_монтажника_${date}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            alert('✅ CSV-файл скачан! Отправьте его руководителю.');
+        }
+
+        // ====== ОТПРАВКА ======
+        async function sendReport() {
+            if (entries.length === 0) {
+                statusBar.className = 'status-bar error';
+                statusBar.textContent = '❌ Нет данных для отправки';
+                statusBar.style.display = 'block';
+                setTimeout(() => {
+                    statusBar.className = 'status-bar';
+                    statusBar.style.display = 'none';
+                }, 3000);
+                return;
+            }
+
+            const firstEntry = entries[0];
+            const objectName = firstEntry.object;
+            if (!objectName) {
+                statusBar.className = 'status-bar error';
+                statusBar.textContent = '❌ Не выбран объект!';
+                statusBar.style.display = 'block';
+                return;
+            }
+
+            const allSameObject = entries.every(e => e.object === objectName);
+            if (!allSameObject) {
+                statusBar.className = 'status-bar error';
+                statusBar.textContent = '❌ В журнале есть записи с разными объектами! Очистите журнал и заполните заново.';
+                statusBar.style.display = 'block';
+                return;
+            }
+
+            if (!confirm(`📤 Вы выбрали объект: "${objectName}".\n\nКоличество записей: ${entries.length}\n\nВсё верно?`)) {
+                return;
+            }
+
+            statusBar.className = 'status-bar sending';
+            statusBar.textContent = '⏳ Отправка данных...';
+            statusBar.style.display = 'block';
+
+            const reports = entries.map(e => ({
+                object: e.object,
+                date: e.date,
+                fio: e.fio,
+                floor: e.floor,
+                room: e.room,
+                workType: e.workType || 'Монтаж',
+                system: e.system,
+                material: e.material,
+                unit: e.unit || '',
+                qty: e.qty
+            }));
+
+            let successCount = 0;
+            let failCount = 0;
+
+            for (let i = 0; i < reports.length; i++) {
+                try {
+                    await fetch(WEBHOOK_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(reports[i])
+                    });
+                    successCount++;
+                    statusBar.textContent = `⏳ Отправка... (${i + 1}/${entries.length})`;
+                } catch (error) {
+                    failCount++;
+                    console.error('Ошибка:', error);
+                    statusBar.className = 'status-bar error';
+                    statusBar.textContent = `❌ Ошибка: ${error.message}`;
+                    statusBar.style.display = 'block';
+                }
+            }
+
+            if (failCount === 0) {
+                statusBar.className = 'status-bar success';
+                statusBar.textContent =
+                    `✅ Отправлено: ${successCount} записей для объекта "${objectName}". Проверьте таблицу!`;
+                statusBar.style.display = 'block';
+
+                setTimeout(() => {
+                    statusBar.className = 'status-bar';
+                    statusBar.style.display = 'none';
+                }, 5000);
+
+                setTimeout(() => {
+                    if (confirm('✅ Данные отправлены! Очистить локальную таблицу?')) {
+                        entries = [];
+                        render();
+                    }
+                }, 1000);
+            } else {
+                statusBar.className = 'status-bar error';
+                statusBar.textContent = `⚠️ Отправлено: ${successCount}, ошибок: ${failCount}. Проверьте интернет.`;
+                statusBar.style.display = 'block';
+            }
+        }
+
+        // ====== ОЧИСТКА ======
+        function clearAll() {
+            if (entries.length === 0) return;
+            if (confirm('🗑 Удалить все записи?')) {
+                entries = [];
+                render();
+                statusBar.className = 'status-bar';
+                statusBar.style.display = 'none';
+            }
+        }
+
+        // ====== ОБРАБОТЧИК КНОПКИ "ДОБАВИТЬ В ЖУРНАЛ" ======
+        function handleAddToJournal() {
+            const date = dateInput.value;
+            const fio = fioInput.value.trim();
+            const object = objectSelect.value;
+            const floor = floorSelect.value;
+            const room = roomInput.value.trim();
+            const workType = workTypeSelect.value;
+            const system = systemSelect.value;
+
+            if (!date) { alert('❌ Выберите дату'); dateInput.focus(); return; }
+            if (!object) { alert('❌ Выберите объект'); objectSelect.focus(); return; }
+            if (!fio || fio.length < 2) { alert('❌ Введите ФИО'); fioInput.focus(); return; }
+            if (!room) { alert('❌ Введите помещение'); roomInput.focus(); return; }
+
+            const roomNum = parseInt(room);
+            if (isNaN(roomNum) || roomNum <= 0) { alert('❌ Некорректный номер помещения'); roomInput.focus(); return; }
+
+            const previewMaterials = [];
+
+            const cableQty = parseQty(document.querySelector('.preset-cable-qty')?.value || '');
+            const cableName = document.querySelector('.preset-cable')?.value || '';
+            if (cableName && !isNaN(cableQty) && cableQty > 0) {
+                previewMaterials.push({ material: cableName, unit: 'м', qty: cableQty, room: room });
+            }
+
+            const channelQty = parseQty(document.querySelector('.preset-channel-qty')?.value || '');
+            const channelName = document.querySelector('.preset-cable-channel')?.value || '';
+            if (channelName && !isNaN(channelQty) && channelQty > 0) {
+                previewMaterials.push({ material: channelName, unit: 'м', qty: channelQty, room: room });
+            }
+
+            const corrugationQty = parseQty(document.querySelector('.preset-corrugation-qty')?.value || '');
+            const corrugationName = document.querySelector('.preset-corrugation')?.value || '';
+            if (corrugationName && !isNaN(corrugationQty) && corrugationQty > 0) {
+                previewMaterials.push({ material: corrugationName, unit: 'м', qty: corrugationQty, room: room });
+            }
+
+            document.querySelectorAll('.preset-extra-select').forEach((select, index) => {
+                if (index < extraMaterials.length) {
+                    const qtyInput = document.querySelectorAll('.preset-extra-qty')[index];
+                    const qty = parseQty(qtyInput?.value || '');
+                    const materialName = select.value;
+                    if (materialName && !isNaN(qty) && qty > 0) {
+                        const unit = PRESET_MATERIALS[system]?.extra.find(e => e.name === materialName)?.unit ||
+                        'м';
+                        previewMaterials.push({ material: materialName, unit: unit, qty: qty, room: room });
+                    }
+                }
+            });
+
+            for (const work of extraWorks) {
+                const qty = parseQty(work.qty || '');
+                const roomsRaw = work.rooms || '';
+                const roomsStr = normalizeRoomsList(roomsRaw);
+                if (work.name && !isNaN(qty) && qty > 0 && roomsStr !== '') {
+                    previewMaterials.push({ material: work.name, unit: work.unit || 'шт', qty: qty, room: roomsStr });
+                }
+            }
+
+            if (previewMaterials.length === 0) {
+                alert('❌ Нет материалов с количеством > 0 для добавления');
+                return;
+            }
+
+            showConfirmModal({
+                date: date,
+                fio: fio,
+                object: object,
+                floor: floor,
+                room: room,
+                workType: workType,
+                system: system,
+                materials: previewMaterials
+            });
+        }
+
+        // ====== СОБЫТИЯ ======
+        csvBtn.addEventListener('click', exportCSV);
+
+        systemSelect.addEventListener('change', function() {
+            extraMaterials = [];
+            extraWorks = [];
+            savedPresetValues = {
+                cableQty: '',
+                cableChannel: '',
+                cableChannelQty: '',
+                corrugation: '',
+                corrugationQty: ''
+            };
+            renderPresetBlock();
+            renderExtraWorkBlock();
+        });
+
+        addToJournalBtn.addEventListener('click', handleAddToJournal);
+        clearBtn.addEventListener('click', clearAll);
+        sendBtn.addEventListener('click', sendReport);
+
+        // ====== ДОМ-РЕНДЕРИНГ ======
+
+        function createPresetRow(labelText, inputType, inputProps, unitLabel, qtyClass, qtyValue) {
+            const row = document.createElement('div');
+            row.className = 'preset-row';
+
+            const matGroup = document.createElement('div');
+            matGroup.className = 'form-group col-material';
+            const matLabel = document.createElement('label');
+            matLabel.textContent = labelText;
+            matGroup.appendChild(matLabel);
+            const input = document.createElement(inputType === 'select' ? 'select' : 'input');
+            for (const [key, val] of Object.entries(inputProps)) {
+                if (key === 'innerHTML') {
+                    input.innerHTML = val;
+                } else {
+                    input[key] = val;
+                }
+            }
+            if (inputType === 'input') {
+                input.className = inputProps.className || '';
+            }
+            matGroup.appendChild(input);
+            row.appendChild(matGroup);
+
+            const qtyGroup = document.createElement('div');
+            qtyGroup.className = 'form-group col-qty';
+            const qtyLabel = document.createElement('label');
+            qtyLabel.textContent = unitLabel ? `Кол-во (${unitLabel})` : '';
+            qtyGroup.appendChild(qtyLabel);
+            if (qtyClass) {
+                const qtyInput = document.createElement('input');
+                qtyInput.type = 'text';
+                qtyInput.className = `preset-qty ${qtyClass}`;
+                qtyInput.inputMode = 'decimal';
+                qtyInput.placeholder = '0';
+                qtyInput.value = qtyValue || '';
+                qtyGroup.appendChild(qtyInput);
+            } else {
+                const dummy = document.createElement('div');
+                dummy.className = 'h-34';
+                qtyGroup.appendChild(dummy);
+            }
+            row.appendChild(qtyGroup);
+
+            const actionsGroup = document.createElement('div');
+            actionsGroup.className = 'form-group col-actions';
+            const actionsLabel = document.createElement('label');
+            actionsLabel.innerHTML = '&nbsp;';
+            actionsGroup.appendChild(actionsLabel);
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'h-34';
+            actionsGroup.appendChild(actionsDiv);
+            row.appendChild(actionsGroup);
+
+            return row;
+        }
+
+        function renderPresetBlock() {
+            const system = systemSelect.value;
+            const container = presetBlock;
+            container.innerHTML = '';
+
+            if (!system) {
+                const msg = document.createElement('div');
+                msg.style.cssText =
+                    'padding: 15px; text-align: center; color: #888; background: #f8f9fa; border-radius: 8px;';
+                msg.textContent = 'Сначала выберите систему (АПС или СОУЭ)';
+                container.appendChild(msg);
+                return;
+            }
+
+            const data = PRESET_MATERIALS[system];
+            if (!data) return;
+
+            const systemClass = system === 'АПС' ? 'aps' : 'soue';
+            const block = document.createElement('div');
+            block.className = 'preset-block';
+
+            const title = document.createElement('div');
+            title.className = 'preset-title';
+            title.innerHTML =
+                `📋 Основные материалы <span class="system-indicator ${systemClass}">${system}</span>`;
+            block.appendChild(title);
+
+            // ===== КАБЕЛЬ (теперь с выбором) =====
+            const cableOptions = data.cable.options.map(opt =>
+                `<option value="${opt.name}" ${opt.name === (savedPresetValues.cable || data.cable.default) ? 'selected' : ''}>${opt.label}</option>`
+            ).join('');
+
+            const cableRow = createPresetRow(
+                data.cable.label,
+                'select', { className: 'preset-cable', innerHTML: cableOptions },
+                'м',
+                'preset-cable-qty',
+                savedPresetValues.cableQty || ''
+            );
+            block.appendChild(cableRow);
+
+            // ===== КАБЕЛЬ-КАНАЛ =====
+            const channelOptions = data.cableChannel.options.map(opt =>
+                `<option value="${opt.name}" ${opt.name === (savedPresetValues.cableChannel || data.cableChannel.default) ? 'selected' : ''}>${opt.label}</option>`
+            ).join('');
+            const channelRow = createPresetRow(
+                data.cableChannel.label,
+                'select', { className: 'preset-cable-channel', innerHTML: channelOptions },
+                'м',
+                'preset-channel-qty',
+                savedPresetValues.cableChannelQty || ''
+            );
+            block.appendChild(channelRow);
+
+            // ===== ГОФРА =====
+            const corrOptions = data.corrugation.options.map(opt =>
+                `<option value="${opt.name}" ${opt.name === (savedPresetValues.corrugation || data.corrugation.default) ? 'selected' : ''}>${opt.label}</option>`
+            ).join('');
+            const corrRow = createPresetRow(
+                data.corrugation.label,
+                'select', { className: 'preset-corrugation', innerHTML: corrOptions },
+                'м',
+                'preset-corrugation-qty',
+                savedPresetValues.corrugationQty || ''
+            );
+            block.appendChild(corrRow);
+
+            // ===== ДОПОЛНИТЕЛЬНЫЕ МАТЕРИАЛЫ (ЗЕЛЁНАЯ ЗОНА) =====
+            const presetChannelSelect = document.querySelector('.preset-cable-channel');
+            const selectedChannelName = presetChannelSelect ? presetChannelSelect.value : data.cableChannel.default;
+
+            const allAvailableOptions = [];
+
+            data.extra.forEach(opt => {
+                allAvailableOptions.push({
+                    name: opt.name,
+                    label: opt.label,
+                    unit: opt.unit || 'м',
+                    type: 'extra'
+                });
+            });
+
+            data.cableChannel.options.forEach(opt => {
+                if (opt.name !== selectedChannelName) {
+                    allAvailableOptions.push({
+                        name: opt.name,
+                        label: opt.label,
+                        unit: 'м',
+                        type: 'channel'
+                    });
+                }
+            });
+
+            allAvailableOptions.sort((a, b) => a.label.localeCompare(b.label));
+
+            const usedNames = extraMaterials.map(m => m.name);
+            const availableOptions = allAvailableOptions.filter(opt => !usedNames.includes(opt.name));
+
+            extraMaterials.forEach((mat, index) => {
+                const fullInfo = allAvailableOptions.find(opt => opt.name === mat.name);
+                if (!fullInfo) return;
+
+                const unit = fullInfo.unit || 'м';
+                const optionsHtml = allAvailableOptions.map(opt =>
+                    `<option value="${opt.name}" ${opt.name === mat.name ? 'selected' : ''}>${opt.label}</option>`
+                ).join('');
+
+                const row = createPresetRow(
+                    'Доп. материал',
+                    'select', { className: 'preset-extra-select', innerHTML: optionsHtml, 'data-extra': index },
+                    unit,
+                    'preset-extra-qty',
+                    mat.qty || ''
+                );
+
+                const btn = document.createElement('button');
+                btn.className = 'btn-remove-material';
+                btn.dataset.extra = index;
+                btn.textContent = '✕';
+                btn.addEventListener('click', function() {
+                    const idx = parseInt(this.dataset.extra);
+                    if (idx >= 0 && idx < extraMaterials.length) {
+                        extraMaterials.splice(idx, 1);
+                        renderPresetBlock();
+                        renderExtraWorkBlock();
+                    }
+                });
+                const actionsCell = row.querySelector('.col-actions');
+                actionsCell.innerHTML = '';
+                actionsCell.appendChild(btn);
+                block.appendChild(row);
+            });
+
+            const availableOptionsHtml = availableOptions.map(opt =>
+                `<option value="${opt.name}">${opt.label}</option>`
+            ).join('');
+
+            if (availableOptions.length > 0) {
+                const addRow = createPresetRow(
+                    '➕ Добавьте ещё материал',
+                    'select', {
+                        id: 'extraMaterialSelect',
+                        className: 'select-placeholder',
+                        innerHTML: `<option value="" selected disabled style="color:#aaa;">➕ Добавьте ещё материал</option>${availableOptionsHtml}`
+                    },
+                    '',
+                    '',
+                    ''
+                );
+                const qtyCell = addRow.querySelector('.col-qty');
+                if (qtyCell) qtyCell.innerHTML = '<div class="h-34"></div>';
+                const actionsCell = addRow.querySelector('.col-actions');
+                if (actionsCell) actionsCell.innerHTML = '<div class="h-34"></div>';
+                block.appendChild(addRow);
+            }
+
+            container.appendChild(block);
+
+            // ===== ОБРАБОТЧИКИ =====
+            document.querySelectorAll('.preset-qty').forEach(input => {
+                input.addEventListener('input', savePresetValues);
+            });
+            document.querySelectorAll('.preset-cable, .preset-cable-channel, .preset-corrugation').forEach(select => {
+                select.addEventListener('change', function() {
+                    savePresetValues();
+                    renderPresetBlock();
+                    renderExtraWorkBlock();
+                });
+            });
+
+            const extraSelect = document.getElementById('extraMaterialSelect');
+            if (extraSelect) {
+                extraSelect.addEventListener('change', function() {
+                    if (this.value) {
+                        const system = systemSelect.value;
+                        const data = PRESET_MATERIALS[system];
+                        if (!data) return;
+                        if (extraMaterials.some(m => m.name === this.value)) {
+                            alert('⚠️ Этот материал уже добавлен');
+                            this.value = '';
+                            return;
+                        }
+                        let unit = 'м';
+                        const fullInfo = allAvailableOptions.find(opt => opt.name === this.value);
+                        if (fullInfo) {
+                            unit = fullInfo.unit || 'м';
+                        }
+                        extraMaterials.push({ name: this.value, qty: '', unit: unit });
+                        this.value = '';
+                        renderPresetBlock();
+                        renderExtraWorkBlock();
+                    }
+                });
+            }
+
+            document.querySelectorAll('.preset-extra-select').forEach((select, index) => {
+                select.addEventListener('change', function() {
+                    if (index < extraMaterials.length) {
+                        const oldName = extraMaterials[index].name;
+                        const newName = this.value;
+                        if (extraMaterials.some((m, i) => i !== index && m.name === newName)) {
+                            alert('⚠️ Этот материал уже добавлен');
+                            this.value = oldName;
+                            return;
+                        }
+                        extraMaterials[index].name = newName;
+                        renderPresetBlock();
+                        renderExtraWorkBlock();
+                    }
+                });
+            });
+
+            document.querySelectorAll('.preset-extra-qty').forEach((input, index) => {
+                input.addEventListener('input', function() {
+                    if (index < extraMaterials.length) {
+                        extraMaterials[index].qty = this.value;
+                    }
+                });
+            });
+
+            savePresetValues();
+        }
+
+        function renderExtraWorkBlock() {
+            const system = systemSelect.value;
+            const container = extraWorkBlock;
+            container.innerHTML = '';
+
+            if (!system) return;
+
+            const block = document.createElement('div');
+            block.className = 'extra-work-block';
+            const title = document.createElement('div');
+            title.className = 'extra-title';
+            title.textContent = '📌 Дополнительные работы';
+            block.appendChild(title);
+
+            extraWorks.forEach((work, index) => {
+                const row = document.createElement('div');
+                row.className = 'extra-work-row';
+                row.dataset.extraWork = index;
+
+                const workGroup = document.createElement('div');
+                workGroup.className = 'form-group col-work';
+                const workLabel = document.createElement('label');
+                workLabel.textContent = 'Работа';
+                workGroup.appendChild(workLabel);
+                const workInput = document.createElement('input');
+                workInput.type = 'text';
+                workInput.className = 'extra-work-name';
+                workInput.value = work.label;
+                workInput.readOnly = true;
+                workInput.style.cssText = 'background:#f0f0f0; cursor:default;';
+                workGroup.appendChild(workInput);
+                row.appendChild(workGroup);
+
+                const qtyGroup = document.createElement('div');
+                qtyGroup.className = 'form-group col-qty';
+                const qtyLabel = document.createElement('label');
+                qtyLabel.textContent = `Кол-во (${work.unit || 'шт'})`;
+                qtyGroup.appendChild(qtyLabel);
+                const qtyInput = document.createElement('input');
+                qtyInput.type = 'text';
+                qtyInput.className = 'extra-work-qty';
+                qtyInput.inputMode = 'decimal';
+                qtyInput.placeholder = '0';
+                qtyInput.value = work.qty || '';
+                qtyInput.addEventListener('input', function() {
+                    if (index < extraWorks.length) {
+                        extraWorks[index].qty = this.value;
+                    }
+                });
+                qtyGroup.appendChild(qtyInput);
+                row.appendChild(qtyGroup);
+
+                const roomsGroup = document.createElement('div');
+                roomsGroup.className = 'form-group col-rooms';
+                const roomsLabel = document.createElement('label');
+                roomsLabel.textContent = 'Список помещений';
+                roomsGroup.appendChild(roomsLabel);
+                const roomsInput = document.createElement('input');
+                roomsInput.type = 'text';
+                roomsInput.className = 'extra-work-rooms';
+                roomsInput.placeholder = '1, 2, 3, 5, 8';
+                roomsInput.value = work.rooms || '';
+                roomsInput.addEventListener('input', function() {
+                    if (index < extraWorks.length) {
+                        extraWorks[index].rooms = this.value;
+                    }
+                });
+                roomsGroup.appendChild(roomsInput);
+                row.appendChild(roomsGroup);
+
+                const actionsGroup = document.createElement('div');
+                actionsGroup.className = 'form-group col-actions';
+                const actionsLabel2 = document.createElement('label');
+                actionsLabel2.innerHTML = '&nbsp;';
+                actionsGroup.appendChild(actionsLabel2);
+                const delBtn = document.createElement('button');
+                delBtn.className = 'btn-remove-extra';
+                delBtn.dataset.extraWork = index;
+                delBtn.textContent = '✕';
+                delBtn.addEventListener('click', function() {
+                    const idx = parseInt(this.dataset.extraWork);
+                    if (idx >= 0 && idx < extraWorks.length) {
+                        extraWorks.splice(idx, 1);
+                        renderExtraWorkBlock();
+                    }
+                });
+                actionsGroup.appendChild(delBtn);
+                row.appendChild(actionsGroup);
+
+                block.appendChild(row);
+
+                const hint = document.createElement('div');
+                hint.className = 'room-list-hint';
+                hint.textContent = 'Номера через запятую, пробел или смешанно';
+                block.appendChild(hint);
+            });
+
+            const usedWorkNames = extraWorks.map(w => w.name);
+            const availableWorks = EXTRA_WORK_OPTIONS.filter(w => !usedWorkNames.includes(w.name));
+
+            const selectRow = document.createElement('div');
+            selectRow.className = 'extra-work-select-row';
+            selectRow.id = 'extraWorkSelectRow';
+
+            const selectGroup = document.createElement('div');
+            selectGroup.className = 'form-group col-work';
+            const selectLabel = document.createElement('label');
+            selectLabel.textContent = '➕ Выберите доп работы';
+            selectGroup.appendChild(selectLabel);
+            const select = document.createElement('select');
+            select.id = 'extraWorkSelect';
+            select.className = 'select-placeholder';
+            const defaultOpt = document.createElement('option');
+            defaultOpt.value = '';
+            defaultOpt.selected = true;
+            defaultOpt.disabled = true;
+            defaultOpt.style.cssText = 'color:#aaa;';
+            defaultOpt.textContent = '➕ Выберите доп работы';
+            select.appendChild(defaultOpt);
+            availableWorks.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt.name;
+                const labelWithUnit = opt.unit ? `${opt.label} (${opt.unit})` : opt.label;
+                option.textContent = labelWithUnit;
+                select.appendChild(option);
+            });
+            select.addEventListener('change', function() {
+                if (this.value) {
+                    if (extraWorks.some(w => w.name === this.value)) {
+                        alert('⚠️ Эта работа уже добавлена');
+                        this.value = '';
+                        return;
+                    }
+                    const selectedOption = EXTRA_WORK_OPTIONS.find(o => o.name === this.value);
+                    extraWorks.push({
+                        name: this.value,
+                        label: selectedOption ? selectedOption.label : this.value,
+                        unit: selectedOption ? selectedOption.unit : 'шт',
+                        qty: '',
+                        rooms: ''
+                    });
+                    this.value = '';
+                    renderExtraWorkBlock();
+                }
+            });
+            selectGroup.appendChild(select);
+            selectRow.appendChild(selectGroup);
+
+            ['col-qty', 'col-rooms', 'col-actions'].forEach(cls => {
+                const grp = document.createElement('div');
+                grp.className = `form-group ${cls}`;
+                const lbl = document.createElement('label');
+                lbl.innerHTML = '&nbsp;';
+                grp.appendChild(lbl);
+                const dummy = document.createElement('div');
+                dummy.className = 'h-34';
+                grp.appendChild(dummy);
+                selectRow.appendChild(grp);
+            });
+
+            block.appendChild(selectRow);
+            container.appendChild(block);
+
+            document.querySelectorAll('.extra-work-qty').forEach((input, index) => {
+                input.addEventListener('input', function() {
+                    if (index < extraWorks.length) {
+                        extraWorks[index].qty = this.value;
+                    }
+                });
+            });
+            document.querySelectorAll('.extra-work-rooms').forEach((input, index) => {
+                input.addEventListener('input', function() {
+                    if (index < extraWorks.length) {
+                        extraWorks[index].rooms = this.value;
+                    }
+                });
+            });
+        }
+
+        // ====== СОХРАНЕНИЕ ЗНАЧЕНИЙ ПРЕСЕТОВ ======
+        function savePresetValues() {
+            const cableSelect = document.querySelector('.preset-cable');
+            if (cableSelect) savedPresetValues.cable = cableSelect.value;
+
+            const cableQtyInput = document.querySelector('.preset-cable-qty');
+            if (cableQtyInput) savedPresetValues.cableQty = cableQtyInput.value;
+
+            const cableChannelSelect = document.querySelector('.preset-cable-channel');
+            if (cableChannelSelect) savedPresetValues.cableChannel = cableChannelSelect.value;
+
+            const channelQtyInput = document.querySelector('.preset-channel-qty');
+            if (channelQtyInput) savedPresetValues.cableChannelQty = channelQtyInput.value;
+
+            const corrugationSelect = document.querySelector('.preset-corrugation');
+            if (corrugationSelect) savedPresetValues.corrugation = corrugationSelect.value;
+
+            const corrugationQtyInput = document.querySelector('.preset-corrugation-qty');
+            if (corrugationQtyInput) savedPresetValues.corrugationQty = corrugationQtyInput.value;
+        }
+
+        // ====== СТАРТ ======
+        render();
+        renderPresetBlock();
+        renderExtraWorkBlock();
+        console.log('✅ Форма загружена!');
+        console.log('📱 Оптимизировано для iPhone');
+        console.log('🏗️ Доступные объекты: ЖЕДЕПОМ, Ларинская гимназия');
     </script>
 </body>
 </html>
