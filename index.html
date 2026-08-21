@@ -4,656 +4,129 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Дневной отчёт монтажника</title>
     <style>
-        * {
-            box-sizing: border-box;
-            font-family: -apple-system, system-ui, Helvetica, Arial, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
-        body {
-            max-width: 1000px;
-            margin: 10px auto;
-            padding: 0 12px;
-            background: #f0f2f5;
-            -webkit-text-size-adjust: 100%;
-            font-size: 16px;
-        }
-        .card {
-            background: white;
-            padding: 16px;
-            border-radius: 14px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-            margin-bottom: 16px;
-        }
-        h2 {
-            margin-top: 0;
-            font-size: 18px;
-        }
-        .form-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 10px;
-            align-items: flex-end;
-        }
-        .form-group {
-            flex: 1 1 120px;
-            min-width: 100px;
-        }
-        .form-group label {
-            display: block;
-            font-size: 12px;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 2px;
-        }
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #ccc;
-            border-radius: 10px;
-            font-size: 16px;
-            background: white;
-            appearance: auto;
-            -webkit-appearance: auto;
-            height: 44px;
-        }
-        .form-group input[type="number"] {
-            -moz-appearance: textfield;
-        }
+        * { box-sizing: border-box; font-family: -apple-system, system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { max-width: 1000px; margin: 10px auto; padding: 0 12px; background: #f0f2f5; -webkit-text-size-adjust: 100%; font-size: 16px; }
+        .card { background: white; padding: 16px; border-radius: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 16px; }
+        h2 { margin-top: 0; font-size: 18px; }
+        .form-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; align-items: flex-end; }
+        .form-group { flex: 1 1 120px; min-width: 100px; }
+        .form-group label { display: block; font-size: 12px; font-weight: 600; color: #333; margin-bottom: 2px; }
+        .form-group input, .form-group select { width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 10px; font-size: 16px; background: white; appearance: auto; -webkit-appearance: auto; height: 44px; }
+        .form-group input[type="number"] { -moz-appearance: textfield; }
         .form-group input[type="number"]::-webkit-outer-spin-button,
-        .form-group input[type="number"]::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-            touch-action: manipulation;
-            height: 48px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 100px;
-        }
-        .btn:hover {
-            opacity: 0.85;
-        }
-        .btn:active {
-            transform: scale(0.97);
-        }
-        .btn-danger {
-            background: #dc3545;
-            color: white;
-        }
-        .btn-send {
-            background: #6f42c1;
-            color: white;
-        }
-        .btn-confirm {
-            background: #28a745;
-            color: white;
-            padding: 12px 40px;
-            font-size: 16px;
-        }
-        .btn-confirm:hover {
-            background: #1e7e34;
-        }
-        .btn-csv {
-            background: #17a2b8;
-            color: white;
-        }
-        .btn-csv:hover {
-            background: #138496;
-        }
-        .btn-outline {
-            background: #f8f9fa;
-            color: #0066cc;
-            border: 1px solid #0066cc;
-        }
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-        .btn-warning {
-            background: #ffc107;
-            color: #000;
-        }
-        .btn-warning:hover {
-            background: #e0a800;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-        }
-        th,
-        td {
-            border: 1px solid #ddd;
-            padding: 4px 6px;
-            text-align: left;
-            vertical-align: middle;
-        }
-        th {
-            background: #e9ecef;
-            font-weight: 600;
-        }
-        .delete-btn {
-            background: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 4px 10px;
-            cursor: pointer;
-            font-size: 13px;
-            touch-action: manipulation;
-            height: 30px;
-        }
-        .delete-btn:hover {
-            background: #b02a37;
-        }
-        .hidden {
-            display: none !important;
-        }
-        .badge {
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-            display: inline-block;
-        }
-        .badge-aps {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        .badge-soue {
-            background: #cce5ff;
-            color: #004085;
-        }
-        .badge-both {
-            background: #e8daef;
-            color: #6c3483;
-        }
-        .badge-worktype {
-            background: #e9ecef;
-            color: #333;
-        }
-        .badge-worktype.montazh {
-            background: #d4edda;
-            color: #155724;
-        }
-        .badge-worktype.demontazh {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        .badge-room {
-            background: #d1ecf1;
-            color: #0c5460;
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-            display: inline-block;
-        }
-        .badge-object {
-            background: #d4edda;
-            color: #155724;
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-            display: inline-block;
-        }
-        .status-bar {
-            padding: 12px 16px;
-            border-radius: 10px;
-            margin-top: 10px;
-            font-size: 15px;
-            display: none;
-            font-weight: 500;
-            text-align: center;
-            border: 1px solid transparent;
-        }
-        .status-bar.success {
-            background: #d4edda;
-            color: #155724;
-            border-color: #c3e6cb;
-            display: block;
-        }
-        .status-bar.error {
-            background: #f8d7da;
-            color: #721c24;
-            border-color: #f5c6cb;
-            display: block;
-        }
-        .status-bar.sending {
-            background: #cce5ff;
-            color: #004085;
-            border-color: #b8daff;
-            display: block;
-        }
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            -webkit-overflow-scrolling: touch;
-            padding: 20px;
-        }
-        .modal-overlay.active {
-            display: flex;
-        }
-        .modal-box {
-            background: white;
-            padding: 24px;
-            border-radius: 16px;
-            max-width: 500px;
-            width: 100%;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        .modal-box h3 {
-            margin-top: 0;
-            font-size: 18px;
-            color: #333;
-        }
-        .modal-box .modal-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-            justify-content: flex-end;
-            flex-wrap: wrap;
-        }
-        .modal-box .modal-buttons .btn {
-            flex: 1;
-            min-width: 80px;
-        }
-        .confirm-details {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 12px;
-            margin: 10px 0;
-            font-size: 14px;
-            line-height: 1.8;
-        }
-        .confirm-details strong {
-            color: #0066cc;
-        }
-        .warning-text {
-            color: #dc3545;
-            font-size: 13px;
-            margin-top: 10px;
-        }
-        .preset-block {
-            background: #f0fdf4;
-            border: 1px solid #bbf7d0;
-            border-radius: 10px;
-            padding: 12px;
-            margin-bottom: 10px;
-        }
-        .preset-block .preset-title {
-            font-size: 13px;
-            font-weight: 600;
-            color: #166534;
-            margin-bottom: 8px;
-            display: block;
-        }
-        .preset-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            align-items: flex-end;
-            margin-bottom: 6px;
-        }
-        .preset-row .form-group {
-            flex: 1 1 80px;
-            min-width: 70px;
-        }
-        .preset-row .form-group.col-material {
-            flex: 1.5;
-            min-width: 100px;
-        }
-        .preset-row .form-group.col-qty {
-            flex: 0.7;
-            min-width: 60px;
-        }
-        .preset-row .form-group.col-actions {
-            flex: 0 0 40px;
-            min-width: 40px;
-        }
-        .preset-row .form-group label {
-            font-size: 10px;
-            color: #166534;
-        }
-        .preset-row .form-group input,
-        .preset-row .form-group select {
-            padding: 6px 8px;
-            border: 1px solid #86efac;
-            border-radius: 8px;
-            font-size: 15px;
-            background: white;
-            width: 100%;
-            height: 38px;
-        }
-        .preset-row .form-group input:focus,
-        .preset-row .form-group select:focus {
-            border-color: #22c55e;
-            outline: none;
-        }
-        .preset-row .form-group input[readonly] {
-            background: #f0fdf4;
-            cursor: default;
-        }
-        .preset-row .btn-remove-material {
-            background: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 0;
-            cursor: pointer;
-            font-size: 16px;
-            height: 38px;
-            width: 38px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            touch-action: manipulation;
-        }
-        .preset-row .btn-remove-material:hover {
-            background: #b02a37;
-        }
-        .extra-work-block {
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 10px;
-            padding: 12px;
-            margin-top: 10px;
-        }
-        .extra-work-block .extra-title {
-            font-size: 13px;
-            font-weight: 600;
-            color: #555;
-            margin-bottom: 8px;
-            display: block;
-        }
-        .extra-work-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            align-items: flex-end;
-            margin-bottom: 6px;
-            padding: 8px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border-left: 3px solid #adb5bd;
-        }
-        .extra-work-row .form-group {
-            flex: 1 1 80px;
-            min-width: 70px;
-        }
-        .extra-work-row .form-group.col-work {
-            flex: 1.2;
-            min-width: 80px;
-        }
-        .extra-work-row .form-group.col-qty {
-            flex: 0.7;
-            min-width: 60px;
-        }
-        .extra-work-row .form-group.col-rooms {
-            flex: 1.2;
-            min-width: 80px;
-        }
-        .extra-work-row .form-group.col-actions {
-            flex: 0 0 40px;
-            min-width: 40px;
-        }
-        .extra-work-row .form-group label {
-            font-size: 10px;
-            color: #555;
-        }
-        .extra-work-row .form-group input,
-        .extra-work-row .form-group select {
-            padding: 6px 8px;
-            border: 1px solid #ced4da;
-            border-radius: 8px;
-            font-size: 15px;
-            background: white;
-            width: 100%;
-            height: 38px;
-        }
-        .extra-work-row .form-group input:focus,
-        .extra-work-row .form-group select:focus {
-            border-color: #6c757d;
-            outline: none;
-        }
-        .extra-work-row .btn-remove-extra {
-            background: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 0;
-            cursor: pointer;
-            font-size: 16px;
-            height: 38px;
-            width: 38px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            touch-action: manipulation;
-        }
-        .extra-work-row .btn-remove-extra:hover {
-            background: #b02a37;
-        }
-        .extra-work-select-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            align-items: flex-end;
-            margin-bottom: 6px;
-            padding: 8px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border-left: 3px solid #adb5bd;
-        }
-        .extra-work-select-row .form-group {
-            flex: 1 1 80px;
-            min-width: 70px;
-        }
-        .extra-work-select-row .form-group.col-work {
-            flex: 1.2;
-            min-width: 80px;
-        }
-        .extra-work-select-row .form-group.col-qty {
-            flex: 0.7;
-            min-width: 60px;
-        }
-        .extra-work-select-row .form-group.col-rooms {
-            flex: 1.2;
-            min-width: 80px;
-        }
-        .extra-work-select-row .form-group.col-actions {
-            flex: 0 0 40px;
-            min-width: 40px;
-        }
-        .extra-work-select-row .form-group label {
-            font-size: 10px;
-            color: #555;
-        }
-        .extra-work-select-row .form-group select {
-            padding: 6px 8px;
-            border: 1px solid #ced4da;
-            border-radius: 8px;
-            font-size: 15px;
-            background: white;
-            width: 100%;
-            height: 38px;
-            color: #aaa;
-            font-style: italic;
-            appearance: auto;
-            -webkit-appearance: auto;
-        }
-        .extra-work-select-row .form-group select:focus {
-            border-color: #6c757d;
-            outline: none;
-        }
-        .extra-work-select-row .form-group select option {
-            color: #333;
-            font-style: normal;
-        }
-        .select-placeholder {
-            color: #aaa;
-            font-style: italic;
-        }
-        .table-qty-input {
-            width: 50px;
-            padding: 4px 6px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 13px;
-            text-align: center;
-        }
-        .table-qty-input:focus {
-            border-color: #0066cc;
-            outline: none;
-        }
-        .save-qty-btn {
-            background: #28a745;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 4px 8px;
-            cursor: pointer;
-            font-size: 11px;
-            margin-left: 4px;
-            touch-action: manipulation;
-            height: 28px;
-        }
-        .save-qty-btn:hover {
-            background: #1e7e34;
-        }
-        .action-buttons {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 12px;
-            align-items: center;
-        }
-        .action-buttons .btn {
-            flex: 1;
-            min-width: 120px;
-        }
-        .quick-add-hint {
-            background: #fff3cd;
-            border: 1px solid #ffc107;
-            border-radius: 8px;
-            padding: 8px 14px;
-            margin-top: 10px;
-            font-size: 13px;
-            color: #856404;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        .room-list-hint {
-            font-size: 10px;
-            color: #888;
-            margin-top: 2px;
-            padding-left: 2px;
-        }
-        .system-indicator {
-            display: inline-block;
-            padding: 2px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        .system-indicator.aps {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        .system-indicator.soue {
-            background: #cce5ff;
-            color: #004085;
-        }
-        .bottom-buttons {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 10px;
-        }
-        .bottom-buttons .btn {
-            flex: 1;
-            min-width: 80px;
-        }
+        .form-group input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .btn { padding: 12px 24px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.2s; touch-action: manipulation; height: 48px; display: inline-flex; align-items: center; justify-content: center; min-width: 100px; }
+        .btn:hover { opacity: 0.85; }
+        .btn:active { transform: scale(0.97); }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-send { background: #6f42c1; color: white; }
+        .btn-confirm { background: #28a745; color: white; padding: 12px 40px; font-size: 16px; }
+        .btn-confirm:hover { background: #1e7e34; }
+        .btn-csv { background: #17a2b8; color: white; }
+        .btn-csv:hover { background: #138496; }
+        .btn-outline { background: #f8f9fa; color: #0066cc; border: 1px solid #0066cc; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-warning { background: #ffc107; color: #000; }
+        .btn-warning:hover { background: #e0a800; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th, td { border: 1px solid #ddd; padding: 4px 6px; text-align: left; vertical-align: middle; }
+        th { background: #e9ecef; font-weight: 600; }
+        .delete-btn { background: #dc3545; color: white; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 13px; touch-action: manipulation; height: 30px; }
+        .delete-btn:hover { background: #b02a37; }
+        .hidden { display: none !important; }
+        .badge { padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; display: inline-block; }
+        .badge-aps { background: #f8d7da; color: #721c24; }
+        .badge-soue { background: #cce5ff; color: #004085; }
+        .badge-both { background: #e8daef; color: #6c3483; }
+        .badge-worktype { background: #e9ecef; color: #333; }
+        .badge-worktype.montazh { background: #d4edda; color: #155724; }
+        .badge-worktype.demontazh { background: #f8d7da; color: #721c24; }
+        .badge-room { background: #d1ecf1; color: #0c5460; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; display: inline-block; }
+        .badge-object { background: #d4edda; color: #155724; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; display: inline-block; }
+        .status-bar { padding: 12px 16px; border-radius: 10px; margin-top: 10px; font-size: 15px; display: none; font-weight: 500; text-align: center; border: 1px solid transparent; }
+        .status-bar.success { background: #d4edda; color: #155724; border-color: #c3e6cb; display: block; }
+        .status-bar.error { background: #f8d7da; color: #721c24; border-color: #f5c6cb; display: block; }
+        .status-bar.sending { background: #cce5ff; color: #004085; border-color: #b8daff; display: block; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; -webkit-overflow-scrolling: touch; padding: 20px; }
+        .modal-overlay.active { display: flex; }
+        .modal-box { background: white; padding: 24px; border-radius: 16px; max-width: 500px; width: 100%; box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; }
+        .modal-box h3 { margin-top: 0; font-size: 18px; color: #333; }
+        .modal-box .modal-buttons { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; flex-wrap: wrap; }
+        .modal-box .modal-buttons .btn { flex: 1; min-width: 80px; }
+        .confirm-details { background: #f8f9fa; border-radius: 8px; padding: 12px; margin: 10px 0; font-size: 14px; line-height: 1.8; }
+        .confirm-details strong { color: #0066cc; }
+        .warning-text { color: #dc3545; font-size: 13px; margin-top: 10px; }
+        .preset-block { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+        .preset-block .preset-title { font-size: 13px; font-weight: 600; color: #166534; margin-bottom: 8px; display: block; }
+        .preset-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-end; margin-bottom: 6px; }
+        .preset-row .form-group { flex: 1 1 80px; min-width: 70px; }
+        .preset-row .form-group.col-material { flex: 1.5; min-width: 100px; }
+        .preset-row .form-group.col-qty { flex: 0.7; min-width: 60px; }
+        .preset-row .form-group.col-actions { flex: 0 0 40px; min-width: 40px; }
+        .preset-row .form-group label { font-size: 10px; color: #166534; }
+        .preset-row .form-group input, .preset-row .form-group select { padding: 6px 8px; border: 1px solid #86efac; border-radius: 8px; font-size: 15px; background: white; width: 100%; height: 38px; }
+        .preset-row .form-group input:focus, .preset-row .form-group select:focus { border-color: #22c55e; outline: none; }
+        .preset-row .form-group input[readonly] { background: #f0fdf4; cursor: default; }
+        .preset-row .btn-remove-material { background: #dc3545; color: white; border: none; border-radius: 8px; padding: 0; cursor: pointer; font-size: 16px; height: 38px; width: 38px; display: flex; align-items: center; justify-content: center; touch-action: manipulation; }
+        .preset-row .btn-remove-material:hover { background: #b02a37; }
+        .extra-work-block { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 10px; padding: 12px; margin-top: 10px; }
+        .extra-work-block .extra-title { font-size: 13px; font-weight: 600; color: #555; margin-bottom: 8px; display: block; }
+        .extra-work-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-end; margin-bottom: 6px; padding: 8px; background: #f8f9fa; border-radius: 8px; border-left: 3px solid #adb5bd; }
+        .extra-work-row .form-group { flex: 1 1 80px; min-width: 70px; }
+        .extra-work-row .form-group.col-work { flex: 1.2; min-width: 80px; }
+        .extra-work-row .form-group.col-qty { flex: 0.7; min-width: 60px; }
+        .extra-work-row .form-group.col-rooms { flex: 1.2; min-width: 80px; }
+        .extra-work-row .form-group.col-actions { flex: 0 0 40px; min-width: 40px; }
+        .extra-work-row .form-group label { font-size: 10px; color: #555; }
+        .extra-work-row .form-group input, .extra-work-row .form-group select { padding: 6px 8px; border: 1px solid #ced4da; border-radius: 8px; font-size: 15px; background: white; width: 100%; height: 38px; }
+        .extra-work-row .form-group input:focus, .extra-work-row .form-group select:focus { border-color: #6c757d; outline: none; }
+        .extra-work-row .btn-remove-extra { background: #dc3545; color: white; border: none; border-radius: 8px; padding: 0; cursor: pointer; font-size: 16px; height: 38px; width: 38px; display: flex; align-items: center; justify-content: center; touch-action: manipulation; }
+        .extra-work-row .btn-remove-extra:hover { background: #b02a37; }
+        .extra-work-select-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-end; margin-bottom: 6px; padding: 8px; background: #f8f9fa; border-radius: 8px; border-left: 3px solid #adb5bd; }
+        .extra-work-select-row .form-group { flex: 1 1 80px; min-width: 70px; }
+        .extra-work-select-row .form-group.col-work { flex: 1.2; min-width: 80px; }
+        .extra-work-select-row .form-group.col-qty { flex: 0.7; min-width: 60px; }
+        .extra-work-select-row .form-group.col-rooms { flex: 1.2; min-width: 80px; }
+        .extra-work-select-row .form-group.col-actions { flex: 0 0 40px; min-width: 40px; }
+        .extra-work-select-row .form-group label { font-size: 10px; color: #555; }
+        .extra-work-select-row .form-group select { padding: 6px 8px; border: 1px solid #ced4da; border-radius: 8px; font-size: 15px; background: white; width: 100%; height: 38px; color: #aaa; font-style: italic; appearance: auto; -webkit-appearance: auto; }
+        .extra-work-select-row .form-group select:focus { border-color: #6c757d; outline: none; }
+        .extra-work-select-row .form-group select option { color: #333; font-style: normal; }
+        .select-placeholder { color: #aaa; font-style: italic; }
+        .table-qty-input { width: 50px; padding: 4px 6px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; text-align: center; }
+        .table-qty-input:focus { border-color: #0066cc; outline: none; }
+        .save-qty-btn { background: #28a745; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 11px; margin-left: 4px; touch-action: manipulation; height: 28px; }
+        .save-qty-btn:hover { background: #1e7e34; }
+        .action-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; align-items: center; }
+        .action-buttons .btn { flex: 1; min-width: 120px; }
+        .quick-add-hint { background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 8px 14px; margin-top: 10px; font-size: 13px; color: #856404; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .room-list-hint { font-size: 10px; color: #888; margin-top: 2px; padding-left: 2px; }
+        .system-indicator { display: inline-block; padding: 2px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+        .system-indicator.aps { background: #f8d7da; color: #721c24; }
+        .system-indicator.soue { background: #cce5ff; color: #004085; }
+        .bottom-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .bottom-buttons .btn { flex: 1; min-width: 80px; }
         @media (max-width: 600px) {
-            .form-group {
-                flex: 1 1 100%;
-                min-width: 100%;
-            }
-            .preset-row .form-group {
-                flex: 1 1 100%;
-                min-width: 100%;
-            }
-            .preset-row .form-group.col-actions {
-                flex: 0 0 40px;
-                min-width: 40px;
-            }
-            .extra-work-row .form-group {
-                flex: 1 1 100%;
-                min-width: 100%;
-            }
-            .extra-work-row .form-group.col-actions {
-                flex: 0 0 40px;
-                min-width: 40px;
-            }
-            .extra-work-select-row .form-group {
-                flex: 1 1 100%;
-                min-width: 100%;
-            }
-            .extra-work-select-row .form-group.col-actions {
-                flex: 0 0 40px;
-                min-width: 40px;
-            }
-            .btn {
-                width: 100%;
-                text-align: center;
-            }
-            .action-buttons .btn {
-                flex: 1 1 100%;
-            }
-            .bottom-buttons .btn {
-                flex: 1 1 100%;
-            }
-            table {
-                font-size: 11px;
-            }
-            th,
-            td {
-                padding: 3px 4px;
-            }
+            .form-group { flex: 1 1 100%; min-width: 100%; }
+            .preset-row .form-group { flex: 1 1 100%; min-width: 100%; }
+            .preset-row .form-group.col-actions { flex: 0 0 40px; min-width: 40px; }
+            .extra-work-row .form-group { flex: 1 1 100%; min-width: 100%; }
+            .extra-work-row .form-group.col-actions { flex: 0 0 40px; min-width: 40px; }
+            .extra-work-select-row .form-group { flex: 1 1 100%; min-width: 100%; }
+            .extra-work-select-row .form-group.col-actions { flex: 0 0 40px; min-width: 40px; }
+            .btn { width: 100%; text-align: center; }
+            .action-buttons .btn { flex: 1 1 100%; }
+            .bottom-buttons .btn { flex: 1 1 100%; }
+            table { font-size: 11px; }
+            th, td { padding: 3px 4px; }
         }
     </style>
 </head>
 <body>
 
-    <!-- Модальное окно для подтверждения -->
+    <!-- Модальные окна -->
     <div class="modal-overlay confirm-modal" id="confirmModal">
         <div class="modal-box">
             <h3>✅ Проверьте данные перед добавлением</h3>
@@ -666,7 +139,6 @@
         </div>
     </div>
 
-    <!-- Модальное окно для ошибок -->
     <div class="modal-overlay" id="warningModal">
         <div class="modal-box">
             <h3>⚠️ Возможная ошибка</h3>
@@ -786,9 +258,9 @@
 
     <script>
         // ====== НАСТРОЙКА ======
-        const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbw9unHgYnRaaAhaaKU_f8kJoGTwv9Tt0ku30gtnNKHGIipWLjU06v3N0LH9KaSUe7SJ/exec';
+        const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwtRSoSHQWafrOXmjBz44aYl3GvFAd3rU7PLyO5P9CA4y0vL_d9b14X8Wl3l_a8g114/exec';
 
-        // ====== ДАННЫЕ (ОБНОВЛЁННЫЕ) ======
+        // ====== ДАННЫЕ ======
         const PRESET_MATERIALS = {
             'АПС': {
                 cable: {
@@ -818,10 +290,8 @@
                     default: 'Труба гофрированная ПВХ, d=16 мм, серая'
                 },
                 extra: [
-                    { name: 'Труба стальная водогазопроводная Ду 15×2,8 мм. ГОСТ 3262-75', label: 'Труба ВГП ДУ 15×2,8',
-                        unit: 'м' },
-                    { name: 'Труба стальная водогазопроводная Ду 20×2,8 мм. ГОСТ 3262-75', label: 'Труба ВГП ДУ 20×2,8',
-                        unit: 'м' },
+                    { name: 'Труба стальная водогазопроводная Ду 15×2,8 мм. ГОСТ 3262-75', label: 'Труба ВГП ДУ 15×2,8', unit: 'м' },
+                    { name: 'Труба стальная водогазопроводная Ду 20×2,8 мм. ГОСТ 3262-75', label: 'Труба ВГП ДУ 20×2,8', unit: 'м' },
                     { name: 'Кабель питания 12В', label: 'Кабель питания 12В', unit: 'м' }
                 ]
             },
@@ -852,10 +322,8 @@
                     default: 'Труба гофрированная ПВХ, d=16 мм, серая'
                 },
                 extra: [
-                    { name: 'Труба стальная водогазопроводная Ду 15×2,8 мм. ГОСТ 3262-75', label: 'Труба ВГП ДУ 15×2,8',
-                        unit: 'м' },
-                    { name: 'Труба стальная водогазопроводная Ду 20×2,8 мм. ГОСТ 3262-75', label: 'Труба ВГП ДУ 20×2,8',
-                        unit: 'м' },
+                    { name: 'Труба стальная водогазопроводная Ду 15×2,8 мм. ГОСТ 3262-75', label: 'Труба ВГП ДУ 15×2,8', unit: 'м' },
+                    { name: 'Труба стальная водогазопроводная Ду 20×2,8 мм. ГОСТ 3262-75', label: 'Труба ВГП ДУ 20×2,8', unit: 'м' },
                     { name: 'Кабель питания 12В', label: 'Кабель питания 12В', unit: 'м' }
                 ]
             }
@@ -877,6 +345,7 @@
         let extraWorks = [];
 
         let savedPresetValues = {
+            cable: '',
             cableQty: '',
             cableChannel: '',
             cableChannelQty: '',
@@ -999,7 +468,7 @@
             return { valid: duplicates.length === 0, duplicates };
         }
 
-        // ====== МОДАЛЬНОЕ ОКНО ОШИБКИ ======
+        // ====== МОДАЛЬНЫЕ ОКНА ======
         function showWarning(message, entryData) {
             warningMessage.textContent = message;
             pendingEntry = entryData;
@@ -1021,27 +490,25 @@
             if (e.target === this) hideWarning();
         });
 
-        // ====== МОДАЛЬНОЕ ОКНО ПРОВЕРКИ ======
         function showConfirmModal(data) {
             let materialsList = '';
             data.materials.forEach((item, index) => {
-                materialsList +=
-                    `${index + 1}. ${item.material} — ${formatNumber(item.qty)} ${item.unit} (пом. ${item.room})\n`;
+                materialsList += `${index + 1}. ${item.material} — ${formatNumber(item.qty)} ${item.unit} (пом. ${item.room})\n`;
             });
 
             const floorDisplay = data.floor === 'подвал' ? 'Подвал' : (data.floor === 'чердак' ? 'Чердак' : data.floor);
 
             confirmDetails.innerHTML = `
-                        <strong>📅 Дата:</strong> ${data.date}<br>
-                        <strong>👤 ФИО:</strong> ${data.fio}<br>
-                        <strong>🏗️ Объект:</strong> ${data.object}<br>
-                        <strong>🏗️ Этаж:</strong> ${floorDisplay}<br>
-                        <strong>🏠 Помещение:</strong> ${data.room}<br>
-                        <strong>🔧 Тип работ:</strong> ${data.workType}<br>
-                        <strong>📡 Система:</strong> ${data.system}<br>
-                        <strong>📦 Материалы (${data.materials.length} шт):</strong><br>
-                        ${materialsList.replace(/\n/g, '<br>')}
-                    `;
+                <strong>📅 Дата:</strong> ${data.date}<br>
+                <strong>👤 ФИО:</strong> ${data.fio}<br>
+                <strong>🏗️ Объект:</strong> ${data.object}<br>
+                <strong>🏗️ Этаж:</strong> ${floorDisplay}<br>
+                <strong>🏠 Помещение:</strong> ${data.room}<br>
+                <strong>🔧 Тип работ:</strong> ${data.workType}<br>
+                <strong>📡 Система:</strong> ${data.system}<br>
+                <strong>📦 Материалы (${data.materials.length} шт):</strong><br>
+                ${materialsList.replace(/\n/g, '<br>')}
+            `;
 
             const today = new Date().toISOString().slice(0, 10);
             if (data.date !== today) {
@@ -1063,15 +530,11 @@
             confirmModal.classList.remove('active');
         }
 
-        confirmCancelBtn.addEventListener('click', function() {
-            hideConfirmModal();
-        });
-
+        confirmCancelBtn.addEventListener('click', hideConfirmModal);
         confirmOkBtn.addEventListener('click', function() {
             hideConfirmModal();
             performAddToJournal();
         });
-
         confirmModal.addEventListener('click', function(e) {
             if (e.target === this) hideConfirmModal();
         });
@@ -1096,7 +559,7 @@
 
             const materialsToAdd = [];
 
-            // Кабель
+            // ===== КАБЕЛЬ =====
             const cableQty = parseQty(document.querySelector('.preset-cable-qty')?.value || '');
             const cableName = document.querySelector('.preset-cable')?.value || '';
             if (cableName && !isNaN(cableQty) && cableQty > 0) {
@@ -1116,7 +579,7 @@
                 });
             }
 
-            // Кабель-канал
+            // ===== КАБЕЛЬ-КАНАЛ =====
             const channelQty = parseQty(document.querySelector('.preset-channel-qty')?.value || '');
             const channelName = document.querySelector('.preset-cable-channel')?.value || '';
             if (channelName && !isNaN(channelQty) && channelQty > 0) {
@@ -1131,7 +594,7 @@
                 });
             }
 
-            // Гофра
+            // ===== ГОФРА =====
             const corrugationQty = parseQty(document.querySelector('.preset-corrugation-qty')?.value || '');
             const corrugationName = document.querySelector('.preset-corrugation')?.value || '';
             if (corrugationName && !isNaN(corrugationQty) && corrugationQty > 0) {
@@ -1146,15 +609,14 @@
                 });
             }
 
-            // Дополнительные материалы (из зелёной зоны)
+            // ===== ДОПОЛНИТЕЛЬНЫЕ МАТЕРИАЛЫ =====
             document.querySelectorAll('.preset-extra-select').forEach((select, index) => {
                 if (index < extraMaterials.length) {
                     const qtyInput = document.querySelectorAll('.preset-extra-qty')[index];
                     const qty = parseQty(qtyInput?.value || '');
                     const materialName = select.value;
                     if (materialName && !isNaN(qty) && qty > 0) {
-                        const unit = PRESET_MATERIALS[system]?.extra.find(e => e.name === materialName)?.unit ||
-                        'м';
+                        const unit = PRESET_MATERIALS[system]?.extra.find(e => e.name === materialName)?.unit || 'м';
                         if (materialName === 'Кабель питания 12В') {
                             const checkResult = checkPowerCable(system, materialName);
                             if (checkResult) {
@@ -1175,7 +637,7 @@
                 }
             });
 
-            // Дополнительные работы
+            // ===== ДОПОЛНИТЕЛЬНЫЕ РАБОТЫ =====
             let allExtraRooms = [];
             let hasDuplicateError = false;
 
@@ -1188,9 +650,7 @@
                     const parts = roomsStr.split(',').map(s => s.trim()).filter(s => s.length > 0);
                     for (const p of parts) {
                         if (allExtraRooms.includes(p)) {
-                            alert(
-                                `⚠️ Помещение ${p} уже использовано в другой дополнительной работе. Повторное использование запрещено.`
-                                );
+                            alert(`⚠️ Помещение ${p} уже использовано в другой дополнительной работе.`);
                             hasDuplicateError = true;
                             break;
                         }
@@ -1208,9 +668,7 @@
                         object: object
                     });
                 } else if (work.name && qty > 0 && roomsRaw.trim() !== '' && roomsStr === '') {
-                    alert(
-                        `❌ Для "${work.name}" введены некорректные номера помещений. Используйте цифры, запятые или пробелы.`
-                        );
+                    alert(`❌ Для "${work.name}" введены некорректные номера помещений.`);
                     hasDuplicateError = true;
                     break;
                 } else if (work.name && qty > 0 && roomsRaw.trim() === '') {
@@ -1266,6 +724,7 @@
             extraMaterials = [];
             extraWorks = [];
             savedPresetValues = {
+                cable: '',
                 cableQty: '',
                 cableChannel: '',
                 cableChannelQty: '',
@@ -1284,26 +743,10 @@
             alert(message);
         }
 
-        // ====== РЕДАКТИРОВАНИЕ В ЖУРНАЛЕ ======
-        function updateEntryQty(index, newQty) {
-            if (index >= 0 && index < entries.length) {
-                const parsed = parseQty(newQty);
-                if (!isNaN(parsed) && parsed > 0) {
-                    entries[index].qty = parsed;
-                    render();
-                } else if (newQty === '') {
-                    // ничего не делаем
-                } else {
-                    alert('❌ Введите корректное количество > 0');
-                }
-            }
-        }
-
         // ====== РЕНДЕР ЖУРНАЛА ======
         function render() {
             if (entries.length === 0) {
-                entriesBody.innerHTML =
-                    `<tr><td colspan="12" style="text-align:center; color:#aaa;">Нет записей</td></tr>`;
+                entriesBody.innerHTML = `<tr><td colspan="12" style="text-align:center; color:#aaa;">Нет записей</td></tr>`;
                 rowCount.textContent = '0';
                 quickAddHint.style.display = 'none';
                 return;
@@ -1312,29 +755,28 @@
             let html = '';
             entries.forEach((e, idx) => {
                 const floorDisplay = e.floor === 'подвал' ? 'Подвал' : (e.floor === 'чердак' ? 'Чердак' : e.floor);
-                const badgeClass = e.system === 'АПС' ? 'badge-aps' : (e.system === 'СОУЭ' ? 'badge-soue' :
-                    (e.system === 'АПС, СОУЭ' ? 'badge-both' : 'badge'));
+                const badgeClass = e.system === 'АПС' ? 'badge-aps' : (e.system === 'СОУЭ' ? 'badge-soue' : (e.system === 'АПС, СОУЭ' ? 'badge-both' : 'badge'));
                 const workTypeClass = e.workType === 'Монтаж' ? 'montazh' : 'demontazh';
 
                 html += `
-                            <tr>
-                                <td>${idx + 1}</td>
-                                <td><span class="badge-object">${e.object}</span></td>
-                                <td>${e.date}</td>
-                                <td>${e.fio}</td>
-                                <td><span class="badge-room">${floorDisplay}</span></td>
-                                <td>${e.room}</td>
-                                <td><span class="badge badge-worktype ${workTypeClass}">${e.workType}</span></td>
-                                <td><span class="badge ${badgeClass}">${e.system}</span></td>
-                                <td style="font-size:11px;">${e.material}</td>
-                                <td>${e.unit}</td>
-                                <td>
-                                    <input type="text" class="table-qty-input" value="${formatNumber(e.qty)}" data-index="${idx}">
-                                    <button class="save-qty-btn" data-index="${idx}">💾</button>
-                                </td>
-                                <td><button class="delete-btn" data-index="${idx}">✕</button></td>
-                            </tr>
-                        `;
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td><span class="badge-object">${e.object}</span></td>
+                        <td>${e.date}</td>
+                        <td>${e.fio}</td>
+                        <td><span class="badge-room">${floorDisplay}</span></td>
+                        <td>${e.room}</td>
+                        <td><span class="badge badge-worktype ${workTypeClass}">${e.workType}</span></td>
+                        <td><span class="badge ${badgeClass}">${e.system}</span></td>
+                        <td style="font-size:11px;">${e.material}</td>
+                        <td>${e.unit}</td>
+                        <td>
+                            <input type="text" class="table-qty-input" value="${formatNumber(e.qty)}" data-index="${idx}">
+                            <button class="save-qty-btn" data-index="${idx}">💾</button>
+                        </td>
+                        <td><button class="delete-btn" data-index="${idx}">✕</button></td>
+                    </tr>
+                `;
             });
 
             entriesBody.innerHTML = html;
@@ -1374,8 +816,7 @@
         function updateQuickAddHint() {
             if (entries.length > 0) {
                 const last = entries[entries.length - 1];
-                const floorDisplay = last.floor === 'подвал' ? 'Подвал' : (last.floor === 'чердак' ? 'Чердак' : last
-                    .floor);
+                const floorDisplay = last.floor === 'подвал' ? 'Подвал' : (last.floor === 'чердак' ? 'Чердак' : last.floor);
                 lastLocationDisplay.textContent = `${last.object}, ${floorDisplay}, помещение ${last.room}`;
                 quickAddHint.style.display = 'flex';
             } else {
@@ -1394,6 +835,7 @@
             extraMaterials = [];
             extraWorks = [];
             savedPresetValues = {
+                cable: '',
                 cableQty: '',
                 cableChannel: '',
                 cableChannelQty: '',
@@ -1417,8 +859,7 @@
 
             entries.forEach(e => {
                 const floorDisplay = e.floor === 'подвал' ? 'Подвал' : (e.floor === 'чердак' ? 'Чердак' : e.floor);
-                csv +=
-                    `${e.object};${e.date};${e.fio};${floorDisplay};${e.room};${e.workType || 'Монтаж'};${e.system};${e.material};${e.unit || ''};${formatNumber(e.qty)}\n`;
+                csv += `${e.object};${e.date};${e.fio};${floorDisplay};${e.room};${e.workType || 'Монтаж'};${e.system};${e.material};${e.unit || ''};${formatNumber(e.qty)}\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -1510,8 +951,7 @@
 
             if (failCount === 0) {
                 statusBar.className = 'status-bar success';
-                statusBar.textContent =
-                    `✅ Отправлено: ${successCount} записей для объекта "${objectName}". Проверьте таблицу!`;
+                statusBar.textContent = `✅ Отправлено: ${successCount} записей для объекта "${objectName}". Проверьте таблицу!`;
                 statusBar.style.display = 'block';
 
                 setTimeout(() => {
@@ -1587,8 +1027,7 @@
                     const qty = parseQty(qtyInput?.value || '');
                     const materialName = select.value;
                     if (materialName && !isNaN(qty) && qty > 0) {
-                        const unit = PRESET_MATERIALS[system]?.extra.find(e => e.name === materialName)?.unit ||
-                        'м';
+                        const unit = PRESET_MATERIALS[system]?.extra.find(e => e.name === materialName)?.unit || 'м';
                         previewMaterials.push({ material: materialName, unit: unit, qty: qty, room: room });
                     }
                 }
@@ -1627,6 +1066,7 @@
             extraMaterials = [];
             extraWorks = [];
             savedPresetValues = {
+                cable: '',
                 cableQty: '',
                 cableChannel: '',
                 cableChannelQty: '',
@@ -1641,8 +1081,7 @@
         clearBtn.addEventListener('click', clearAll);
         sendBtn.addEventListener('click', sendReport);
 
-        // ====== ДОМ-РЕНДЕРИНГ ======
-
+        // ====== РЕНДЕРИНГ БЛОКОВ ======
         function createPresetRow(labelText, inputType, inputProps, unitLabel, qtyClass, qtyValue) {
             const row = document.createElement('div');
             row.className = 'preset-row';
@@ -1706,8 +1145,7 @@
 
             if (!system) {
                 const msg = document.createElement('div');
-                msg.style.cssText =
-                    'padding: 15px; text-align: center; color: #888; background: #f8f9fa; border-radius: 8px;';
+                msg.style.cssText = 'padding: 15px; text-align: center; color: #888; background: #f8f9fa; border-radius: 8px;';
                 msg.textContent = 'Сначала выберите систему (АПС или СОУЭ)';
                 container.appendChild(msg);
                 return;
@@ -1722,15 +1160,13 @@
 
             const title = document.createElement('div');
             title.className = 'preset-title';
-            title.innerHTML =
-                `📋 Основные материалы <span class="system-indicator ${systemClass}">${system}</span>`;
+            title.innerHTML = `📋 Основные материалы <span class="system-indicator ${systemClass}">${system}</span>`;
             block.appendChild(title);
 
-            // ===== КАБЕЛЬ (теперь с выбором) =====
+            // Кабель (select)
             const cableOptions = data.cable.options.map(opt =>
                 `<option value="${opt.name}" ${opt.name === (savedPresetValues.cable || data.cable.default) ? 'selected' : ''}>${opt.label}</option>`
             ).join('');
-
             const cableRow = createPresetRow(
                 data.cable.label,
                 'select', { className: 'preset-cable', innerHTML: cableOptions },
@@ -1740,7 +1176,7 @@
             );
             block.appendChild(cableRow);
 
-            // ===== КАБЕЛЬ-КАНАЛ =====
+            // Кабель-канал
             const channelOptions = data.cableChannel.options.map(opt =>
                 `<option value="${opt.name}" ${opt.name === (savedPresetValues.cableChannel || data.cableChannel.default) ? 'selected' : ''}>${opt.label}</option>`
             ).join('');
@@ -1753,7 +1189,7 @@
             );
             block.appendChild(channelRow);
 
-            // ===== ГОФРА =====
+            // Гофра
             const corrOptions = data.corrugation.options.map(opt =>
                 `<option value="${opt.name}" ${opt.name === (savedPresetValues.corrugation || data.corrugation.default) ? 'selected' : ''}>${opt.label}</option>`
             ).join('');
@@ -1766,7 +1202,7 @@
             );
             block.appendChild(corrRow);
 
-            // ===== ДОПОЛНИТЕЛЬНЫЕ МАТЕРИАЛЫ (ЗЕЛЁНАЯ ЗОНА) =====
+            // Дополнительные материалы (зелёная зона)
             const presetChannelSelect = document.querySelector('.preset-cable-channel');
             const selectedChannelName = presetChannelSelect ? presetChannelSelect.value : data.cableChannel.default;
 
@@ -1857,7 +1293,6 @@
 
             container.appendChild(block);
 
-            // ===== ОБРАБОТЧИКИ =====
             document.querySelectorAll('.preset-qty').forEach(input => {
                 input.addEventListener('input', savePresetValues);
             });
@@ -2012,7 +1447,6 @@
                 row.appendChild(actionsGroup);
 
                 block.appendChild(row);
-
                 const hint = document.createElement('div');
                 hint.className = 'room-list-hint';
                 hint.textContent = 'Номера через запятую, пробел или смешанно';
@@ -2127,7 +1561,6 @@
         renderPresetBlock();
         renderExtraWorkBlock();
         console.log('✅ Форма загружена!');
-        console.log('📱 Оптимизировано для iPhone');
         console.log('🏗️ Доступные объекты: ЖЕДЕПОМ, Ларинская гимназия');
     </script>
 </body>
